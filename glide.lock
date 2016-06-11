@@ -1,0 +1,129 @@
+hash: 912c3e755581cb8bbabe09be289dd32f31d3cd40042d5cca0f88ee79de9aad13
+updated: 2016-06-11T16:45:57.430141377-04:00
+imports:
+- name: git.schwanenlied.me/yawning/chacha20.git
+  version: c91e78db502ff629614837aacb7aa4efa61c651a
+- name: git.schwanenlied.me/yawning/poly1305.git
+  version: dfc796fe731c2cfd3aa1e96115ab0aaa3cbb7849
+- name: github.com/abiosoft/caddy-git
+  version: b90848b16bfd5606e49fa824c11ad95abcebdc7c
+  subpackages:
+  - gitos
+- name: github.com/BurntSushi/toml
+  version: f0aeabca5a127c4078abb8c8d64298b147264b55
+- name: github.com/dustin/go-humanize
+  version: 499693e27ee0d14ffab67c31ad065fdb3d34ea75
+- name: github.com/flynn/go-shlex
+  version: 3f9db97f856818214da2e1057f8ad84803971cff
+- name: github.com/go-kit/kit
+  version: 8e29ecb32abaeb834f62d5b0f1666d45686a49a0
+  subpackages:
+  - log
+  - endpoint
+  - transport/http
+- name: github.com/go-logfmt/logfmt
+  version: d4327190ff838312623b09bfeb50d7c93c8d9c1d
+- name: github.com/go-stack/stack
+  version: 100eb0c0a9c5b306ca2fb4f165df21d80ada4b82
+- name: github.com/gorilla/websocket
+  version: a68708917c6a4f06314ab4e52493cc61359c9d42
+- name: github.com/hashicorp/go-syslog
+  version: 42a2b573b664dbf281bd48c3cc12c086b17a39ba
+- name: github.com/jimstudt/http-authentication
+  version: 3eca13d6893afd7ecabe15f4445f5d2872a1b012
+  subpackages:
+  - basic
+- name: github.com/kr/logfmt
+  version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
+- name: github.com/lucas-clemente/chacha20poly1305
+  version: ecc9f245638b6ac6fec56f508a61afc99f353007
+- name: github.com/lucas-clemente/fnv128a
+  version: 393af48d391698c6ae4219566bfbdfef67269997
+- name: github.com/lucas-clemente/quic-go
+  version: c0952617499c407b45068f5cb753341d26697319
+  subpackages:
+  - h2quic
+  - protocol
+  - utils
+  - ackhandler
+  - crypto
+  - flowcontrol
+  - frames
+  - handshake
+  - qerr
+  - congestion
+- name: github.com/lucas-clemente/quic-go-certificates
+  version: 9bb36d3159787cca26dcfa15e23049615e307ef8
+- name: github.com/mholt/caddy
+  version: daa4de572e92668e8b40024c641cdd3d9fa6f21c
+  subpackages:
+  - caddyhttp
+  - caddytls
+  - caddyhttp/httpserver
+  - caddyfile
+  - caddyhttp/basicauth
+  - caddyhttp/bind
+  - caddyhttp/browse
+  - caddyhttp/errors
+  - caddyhttp/expvar
+  - caddyhttp/extensions
+  - caddyhttp/fastcgi
+  - caddyhttp/gzip
+  - caddyhttp/header
+  - caddyhttp/internalsrv
+  - caddyhttp/log
+  - caddyhttp/markdown
+  - caddyhttp/mime
+  - caddyhttp/pprof
+  - caddyhttp/proxy
+  - caddyhttp/redirect
+  - caddyhttp/rewrite
+  - caddyhttp/root
+  - caddyhttp/templates
+  - caddyhttp/websocket
+  - startupshutdown
+  - caddyhttp/staticfiles
+  - caddyhttp/markdown/metadata
+  - caddyhttp/markdown/summary
+- name: github.com/micromdm/scep
+  version: b7516ce6fe521e14e2d9dbbf03004ad206135807
+  subpackages:
+  - caddy
+  - server
+  - scep
+  - scep/internal/pkcs7
+- name: github.com/miekg/dns
+  version: e048e89b44f5ea4f4cc2a01eb842ad4d73e8f891
+- name: github.com/russross/blackfriday
+  version: 1d6b8e9301e720b08a8938b8c25c018285885438
+- name: github.com/shurcooL/sanitized_anchor_name
+  version: 10ef21a441db47d8b13ebcc5fd2310f636973c77
+- name: github.com/xenolf/lego
+  version: cae9c70e1e5945b384ef59b6313ddf9e42543530
+  subpackages:
+  - acme
+- name: golang.org/x/crypto
+  version: 77f4136a99ffb5ecdbdd0226bd5cb146cf56bc0e
+  subpackages:
+  - ocsp
+  - curve25519
+  - hkdf
+- name: golang.org/x/net
+  version: 3f122ce3dbbe488b7e6a8bdb26f41edec852a40b
+  subpackages:
+  - context
+  - publicsuffix
+  - http2
+  - http2/hpack
+  - context/ctxhttp
+  - lex/httplex
+- name: gopkg.in/natefinch/lumberjack.v2
+  version: 514cbda263a734ae8caac038dadf05f8f3f9f738
+- name: gopkg.in/square/go-jose.v1
+  version: e3f973b66b91445ec816dd7411ad1b6495a5a2fc
+  subpackages:
+  - cipher
+  - json
+- name: gopkg.in/yaml.v2
+  version: a83829b6f1293c91addabc89d0571c246397bbf4
+devImports: []

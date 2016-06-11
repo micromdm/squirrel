@@ -1,0 +1,16 @@
+package: github.com/micromdm/squirrel
+import:
+- package: github.com/abiosoft/caddy-git
+- package: github.com/go-kit/kit
+  subpackages:
+  - log
+- package: github.com/mholt/caddy
+  subpackages:
+  - caddyhttp
+  - caddytls
+- package: github.com/micromdm/scep
+  subpackages:
+  - caddy
+- package: github.com/xenolf/lego
+  subpackages:
+  - acme
