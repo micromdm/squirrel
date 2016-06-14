@@ -212,7 +212,7 @@ var (
 // Build information obtained with the help of -ldflags
 var (
 	appVersion = "(untracked dev build)" // inferred at startup
-	devBuild   = true                    // inferred at startup
+	devBuild   = false                   // inferred at startup
 
 	buildDate        string // date -u
 	gitTag           string // git describe --exact-match HEAD 2> /dev/null
