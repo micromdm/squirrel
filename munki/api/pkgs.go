@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/groob/ape/datastore"
 	"github.com/julienschmidt/httprouter"
+	"github.com/micromdm/squirrel/munki/datastore"
 )
 
 func handlePkgsCreate(db datastore.Datastore) httprouter.Handle {

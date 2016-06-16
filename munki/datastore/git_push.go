@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/groob/ape/models"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 // GitRepo lets you push back changes to a repository

@@ -7,8 +7,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/groob/ape/models"
 	"github.com/groob/plist"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 // AllManifests returns an array of manifests

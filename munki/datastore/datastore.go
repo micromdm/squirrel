@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/groob/ape/models"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 var (

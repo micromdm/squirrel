@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/groob/ape/datastore"
-	"github.com/groob/ape/models"
 	"github.com/julienschmidt/httprouter"
+	"github.com/micromdm/squirrel/munki/datastore"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 func handleManifestsList(db datastore.Datastore) httprouter.Handle {

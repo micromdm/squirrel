@@ -5,8 +5,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/groob/ape/models"
 	"github.com/groob/plist"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 var makecatalogs = make(chan bool, 1)

@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
-	"github.com/groob/ape/models"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 // TODO set from flag

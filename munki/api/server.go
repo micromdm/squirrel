@@ -4,7 +4,7 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/groob/ape/datastore"
+	"github.com/micromdm/squirrel/munki/datastore"
 )
 
 type config struct {

@@ -10,9 +10,9 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/groob/ape/datastore"
-	"github.com/groob/ape/models"
 	"github.com/groob/plist"
+	"github.com/micromdm/squirrel/munki/datastore"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 func respond(rw http.ResponseWriter, body models.Viewer, accept string, status int) {

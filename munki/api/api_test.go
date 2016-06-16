@@ -1,8 +1,6 @@
 package api
 
 import (
-	"ape/datastore"
-	"ape/models"
 	"io"
 	"log"
 	"net/http"
@@ -10,6 +8,9 @@ import (
 	"net/url"
 	"os"
 	"testing"
+
+	"github.com/micromdm/squirrel/munki/datastore"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 var (

@@ -1,7 +1,6 @@
 package api
 
 import (
-	"ape/models"
 	"bytes"
 	"encoding/json"
 	"io"
@@ -10,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/groob/plist"
+	"github.com/micromdm/squirrel/munki/models"
 )
 
 func TestManifestsShow(t *testing.T) {
