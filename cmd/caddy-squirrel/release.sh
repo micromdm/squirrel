@@ -2,7 +2,7 @@
 
 VERSION="0.1.0.0"
 NAME=squirrel
-OUTPUT=build
+OUTPUT=../../build
 
 echo "Building $NAME version $VERSION"
 
