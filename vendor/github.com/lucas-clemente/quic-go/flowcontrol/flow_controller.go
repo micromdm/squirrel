@@ -25,7 +25,8 @@ type flowController struct {
 }
 
 // NewFlowController gets a new flow controller
-func NewFlowController(streamID protocol.StreamID, connectionParametersManager *handshake.ConnectionParametersManager) FlowController {
+// TODO: make private
+func NewFlowController(streamID protocol.StreamID, connectionParametersManager *handshake.ConnectionParametersManager) *flowController {
 	fc := flowController{
 		streamID:                    streamID,
 		connectionParametersManager: connectionParametersManager,
@@ -159,11 +160,4 @@ func (c *flowController) CheckFlowControlViolation() bool {
 		return true
 	}
 	return false
-}
-
-func (c *flowController) GetHighestReceived() protocol.ByteCount {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
-
-	return c.highestReceived
 }

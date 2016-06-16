@@ -341,6 +341,7 @@ var directives = []string{
 	"log",
 	"gzip",
 	"errors",
+	"minify",   // github.com/hacdias/caddy-minify
 	"ipfilter", // github.com/pyed/ipfilter
 	"search",   // github.com/pedronasser/caddy-search
 	"header",
@@ -365,7 +366,6 @@ var directives = []string{
 	"hugo",       // github.com/hacdias/caddy-hugo
 	"mailout",    // github.com/SchumacherFM/mailout
 	"prometheus", // github.com/miekg/caddy-prometheus
-	"scep",
 }
 
 const (
