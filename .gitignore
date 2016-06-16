@@ -1,3 +1,4 @@
+cmd/squirrel/squirrel
 cmd/caddy-squirrel/squirrel
 Caddyfile
 build/
