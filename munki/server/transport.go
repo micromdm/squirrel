@@ -2,6 +2,7 @@ package munkiserver
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 
 	kitlog "github.com/go-kit/kit/log"
@@ -9,12 +10,28 @@ import (
 	kithttp "github.com/go-kit/kit/transport/http"
 	"github.com/gorilla/mux"
 	"github.com/groob/plist"
+	"github.com/micromdm/squirrel/munki/datastore"
 
 	"golang.org/x/net/context"
 )
 
+var (
+	// ErrEmptyRequest is returned if the request body is empty
+	errEmptyRequest = errors.New("request must contain all required fields")
+	errBadRouting   = errors.New("inconsistent mapping between route and handler (programmer error)")
+)
+
 func decodeListManifestsRequest(_ context.Context, r *http.Request) (interface{}, error) {
 	return listManifestsRequest{}, nil
+}
+
+func decodeShowManifestRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	vars := mux.Vars(r)
+	path, ok := vars["path"]
+	if !ok {
+		return nil, errBadRouting
+	}
+	return showManifestRequest{Path: path}, nil
 }
 
 // ServiceHandler creates an HTTP handler for the munki Service
@@ -31,8 +48,16 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 		encodeResponse,
 		opts...,
 	)
+	showManifestHandler := kithttp.NewServer(
+		ctx,
+		makeShowManifestEndpoint(svc),
+		decodeShowManifestRequest,
+		encodeResponse,
+		opts...,
+	)
 	r := mux.NewRouter()
 	// manifests
+	r.Handle("/api/v1/manifests/{path}", showManifestHandler).Methods("GET")
 	r.Handle("/api/v1/manifests", listManifestsHandler).Methods("GET")
 	return r
 }
@@ -135,6 +160,8 @@ func encodeError(ctx context.Context, err error, w http.ResponseWriter) {
 
 func codeFrom(err error) int {
 	switch err {
+	case datastore.ErrNotFound:
+		return http.StatusNotFound
 	default:
 		if e, ok := err.(httptransport.Error); ok {
 			switch e.Domain {

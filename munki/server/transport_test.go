@@ -1,6 +1,7 @@
 package munkiserver_test
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -20,6 +21,27 @@ func TestListManifests(t *testing.T) {
 	defer server.Close()
 	testListManifestsHTTP(t, server, http.StatusOK)
 }
+func TestShowManifests(t *testing.T) {
+	server, _ := newServer(t)
+	defer server.Close()
+	testShowManifestHTTP(t, server, "site_default", http.StatusOK)
+	testShowManifestHTTP(t, server, "site_none", http.StatusNotFound)
+}
+
+func testShowManifestHTTP(t *testing.T, server *httptest.Server, path string, expectedStatus int) *munki.Manifest {
+	client := http.DefaultClient
+	theURL := server.URL + "/api/v1/manifests/" + path
+	resp, err := client.Get(theURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != expectedStatus {
+		fmt.Println(theURL)
+		io.Copy(os.Stdout, resp.Body)
+		t.Fatal("expected", expectedStatus, "got", resp.StatusCode)
+	}
+	return nil
+}
 
 func testListManifestsHTTP(t *testing.T, server *httptest.Server, expectedStatus int) *munki.ManifestCollection {
 	client := http.DefaultClient
@@ -32,7 +54,6 @@ func testListManifestsHTTP(t *testing.T, server *httptest.Server, expectedStatus
 		io.Copy(os.Stdout, resp.Body)
 		t.Fatal("expected", expectedStatus, "got", resp.StatusCode)
 	}
-	io.Copy(os.Stdout, resp.Body)
 	return nil
 }
 
