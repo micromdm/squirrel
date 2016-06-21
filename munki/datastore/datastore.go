@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 
 	"github.com/micromdm/squirrel/munki/models"
+	"github.com/micromdm/squirrel/munki/munki"
 )
 
 var (
@@ -20,13 +21,13 @@ var (
 type Datastore interface {
 	models.PkgsinfoStore
 	models.PkgStore
-	models.ManifestStore
+	munki.ManifestStore
 }
 
 // SimpleRepo is a filesystem based backend
 type SimpleRepo struct {
 	Path           string
-	indexManifests map[string]*models.Manifest
+	indexManifests map[string]*munki.Manifest
 	indexPkgsinfo  map[string]*models.PkgsInfo
 }
 

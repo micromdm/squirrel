@@ -6,7 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
-	"github.com/micromdm/squirrel/munki/models"
+	"github.com/micromdm/squirrel/munki/munki"
 )
 
 // GitRepo lets you push back changes to a repository
@@ -20,7 +20,7 @@ type GitRepo struct {
 }
 
 // NewManifest creates a new manifest and commits it to git.
-func (r *GitRepo) NewManifest(name string) (*models.Manifest, error) {
+func (r *GitRepo) NewManifest(name string) (*munki.Manifest, error) {
 	manifest, err := r.Datastore.NewManifest(name)
 	if err != nil {
 		return nil, err

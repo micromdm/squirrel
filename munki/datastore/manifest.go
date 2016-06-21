@@ -8,12 +8,12 @@ import (
 	"path/filepath"
 
 	"github.com/groob/plist"
-	"github.com/micromdm/squirrel/munki/models"
+	"github.com/micromdm/squirrel/munki/munki"
 )
 
 // AllManifests returns an array of manifests
-func (r *SimpleRepo) AllManifests() (*models.ManifestCollection, error) {
-	manifests := &models.ManifestCollection{}
+func (r *SimpleRepo) AllManifests() (*munki.ManifestCollection, error) {
+	manifests := &munki.ManifestCollection{}
 	err := loadManifests(r.Path, manifests)
 	if err != nil {
 		return nil, err
@@ -23,8 +23,8 @@ func (r *SimpleRepo) AllManifests() (*models.ManifestCollection, error) {
 }
 
 // Manifest returns a single manifest from repo
-func (r *SimpleRepo) Manifest(name string) (*models.Manifest, error) {
-	manifests := &models.ManifestCollection{}
+func (r *SimpleRepo) Manifest(name string) (*munki.Manifest, error) {
+	manifests := &munki.ManifestCollection{}
 	err := loadManifests(r.Path, manifests)
 	if err != nil {
 		return nil, err
@@ -39,15 +39,15 @@ func (r *SimpleRepo) Manifest(name string) (*models.Manifest, error) {
 }
 
 // NewManifest returns a single manifest from repo
-func (r *SimpleRepo) NewManifest(name string) (*models.Manifest, error) {
-	manifest := &models.Manifest{}
+func (r *SimpleRepo) NewManifest(name string) (*munki.Manifest, error) {
+	manifest := &munki.Manifest{}
 	manifestPath := fmt.Sprintf("%v/manifests/%v", r.Path, name)
 	err := createFile(manifestPath)
 	return manifest, err
 }
 
 // SaveManifest saves a manifest to the datastore
-func (r *SimpleRepo) SaveManifest(manifest *models.Manifest) error {
+func (r *SimpleRepo) SaveManifest(manifest *munki.Manifest) error {
 	if manifest.Filename == "" {
 		return errors.New("filename key must be set")
 	}
@@ -69,14 +69,14 @@ func (r *SimpleRepo) DeleteManifest(name string) error {
 	return deleteFile(manifestPath)
 }
 
-func (r *SimpleRepo) updateManifestIndex(manifests *models.ManifestCollection) {
-	r.indexManifests = make(map[string]*models.Manifest, len(*manifests))
+func (r *SimpleRepo) updateManifestIndex(manifests *munki.ManifestCollection) {
+	r.indexManifests = make(map[string]*munki.Manifest, len(*manifests))
 	for _, manifest := range *manifests {
 		r.indexManifests[manifest.Filename] = manifest
 	}
 }
 
-func walkManifests(manifests *models.ManifestCollection) filepath.WalkFunc {
+func walkManifests(manifests *munki.ManifestCollection) filepath.WalkFunc {
 	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -88,7 +88,7 @@ func walkManifests(manifests *models.ManifestCollection) filepath.WalkFunc {
 		defer file.Close()
 		if !info.IsDir() {
 			// Decode manifest
-			manifest := &models.Manifest{}
+			manifest := &munki.Manifest{}
 			err := plist.NewDecoder(file).Decode(manifest)
 			if err != nil {
 				log.Printf("git-repo: failed to decode %v, skipping \n", info.Name())
@@ -104,7 +104,7 @@ func walkManifests(manifests *models.ManifestCollection) filepath.WalkFunc {
 	}
 }
 
-func loadManifests(path string, manifests *models.ManifestCollection) error {
+func loadManifests(path string, manifests *munki.ManifestCollection) error {
 	manifestPath := fmt.Sprintf("%v/manifests", path)
 	return filepath.Walk(manifestPath, walkManifests(manifests))
 }
