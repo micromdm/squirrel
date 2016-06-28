@@ -9,7 +9,8 @@ import (
 // Service describes the actions of a munki server
 type Service interface {
 	ListManifests(ctx context.Context) (*munki.ManifestCollection, error)
-	ShowManifest(ctx context.Context, path string) (*munki.Manifest, error)
+	ShowManifest(ctx context.Context, name string) (*munki.Manifest, error)
+	CreateManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error)
 }
 
 type service struct {
@@ -20,8 +21,20 @@ func (svc service) ListManifests(ctx context.Context) (*munki.ManifestCollection
 	return svc.repo.AllManifests()
 }
 
-func (svc service) ShowManifest(ctx context.Context, path string) (*munki.Manifest, error) {
-	return svc.repo.Manifest(path)
+func (svc service) ShowManifest(ctx context.Context, name string) (*munki.Manifest, error) {
+	return svc.repo.Manifest(name)
+}
+
+func (svc service) CreateManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error) {
+	_, err := svc.repo.NewManifest(name)
+	if err != nil {
+		return nil, err
+	}
+	manifest.Filename = name
+	if err := svc.repo.SaveManifest(manifest); err != nil {
+		return nil, err
+	}
+	return manifest, nil
 }
 
 // NewService creates a new munki api service

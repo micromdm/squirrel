@@ -45,3 +45,23 @@ func makeShowManifestEndpoint(svc Service) endpoint.Endpoint {
 		return showManifestResponse{Manifest: manifest, Err: err}, nil
 	}
 }
+
+type createManifestRequest struct {
+	Filename string `plist:"filename" json:"filename"`
+	*munki.Manifest
+}
+
+type createManifestResponse struct {
+	*munki.Manifest
+	Err error `json:"error,omitempty" plist:"error,omitempty"`
+}
+
+func (r createManifestResponse) error() error { return r.Err }
+
+func makeCreateManifestEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createManifestRequest)
+		manifest, err := svc.CreateManifest(ctx, req.Filename, req.Manifest)
+		return showManifestResponse{Manifest: manifest, Err: err}, nil
+	}
+}

@@ -1,8 +1,11 @@
 package munkiserver_test
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -21,11 +24,57 @@ func TestListManifests(t *testing.T) {
 	defer server.Close()
 	testListManifestsHTTP(t, server, http.StatusOK)
 }
+
 func TestShowManifests(t *testing.T) {
 	server, _ := newServer(t)
 	defer server.Close()
 	testShowManifestHTTP(t, server, "site_default", http.StatusOK)
 	testShowManifestHTTP(t, server, "site_none", http.StatusNotFound)
+}
+
+func TestCreateManifest(t *testing.T) {
+	server, _ := newServer(t)
+	defer server.Close()
+	manifests := []*munki.Manifest{
+		&munki.Manifest{
+			Filename: "foo-manifest",
+			Catalogs: []string{"production", "testing"},
+		},
+	}
+
+	for _, m := range manifests {
+		testCreateManifestHTTP(t, server, m.Filename, m, http.StatusOK)
+		os.Remove("testdata/testrepo/manifests/" + m.Filename)
+	}
+}
+
+type createManifestRequest struct {
+	Filename string `plist:"filename" json:"filename"`
+	*munki.Manifest
+}
+
+func testCreateManifestHTTP(t *testing.T, server *httptest.Server, filename string, manifest *munki.Manifest, expectedStatus int) *munki.Manifest {
+	client := http.DefaultClient
+	theURL := server.URL + "/api/v1/manifests"
+	var req = &createManifestRequest{
+		Filename: filename,
+		Manifest: manifest,
+	}
+	data, err := json.Marshal(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := ioutil.NopCloser(bytes.NewBuffer(data))
+	resp, err := client.Post(theURL, "application/json", body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != expectedStatus {
+		io.Copy(os.Stdout, resp.Body)
+		t.Fatal("expected", expectedStatus, "got", resp.StatusCode)
+	}
+
+	return nil
 }
 
 func testShowManifestHTTP(t *testing.T, server *httptest.Server, path string, expectedStatus int) *munki.Manifest {
