@@ -11,6 +11,8 @@ type Service interface {
 	ListManifests(ctx context.Context) (*munki.ManifestCollection, error)
 	ShowManifest(ctx context.Context, name string) (*munki.Manifest, error)
 	CreateManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error)
+	ReplaceManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error)
+	DeleteManifest(ctx context.Context, name string) error
 }
 
 type service struct {
@@ -35,6 +37,18 @@ func (svc service) CreateManifest(ctx context.Context, name string, manifest *mu
 		return nil, err
 	}
 	return manifest, nil
+}
+
+func (svc service) DeleteManifest(ctx context.Context, name string) error {
+	return svc.repo.DeleteManifest(name)
+}
+
+func (svc service) ReplaceManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error) {
+	panic("not implemented")
+}
+
+func (svc service) UpdateManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error) {
+	panic("not implemented")
 }
 
 // NewService creates a new munki api service

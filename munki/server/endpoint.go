@@ -65,3 +65,20 @@ func makeCreateManifestEndpoint(svc Service) endpoint.Endpoint {
 		return showManifestResponse{Manifest: manifest, Err: err}, nil
 	}
 }
+
+type deleteManifestRequest struct {
+	Path string `plist:"filename" json:"filename"`
+}
+
+type deleteManifestResponse struct {
+	Err error `json:"error,omitempty" plist:"error,omitempty"`
+}
+
+func (r deleteManifestResponse) error() error { return r.Err }
+func makeDeleteManifestEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(deleteManifestRequest)
+		err := svc.DeleteManifest(ctx, req.Path)
+		return deleteManifestResponse{Err: err}, nil
+	}
+}

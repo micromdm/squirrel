@@ -42,6 +42,15 @@ func decodeCreateManifestRequest(_ context.Context, r *http.Request) (interface{
 	return request, nil
 }
 
+func decodeDeleteManifestRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	vars := mux.Vars(r)
+	path, ok := vars["path"]
+	if !ok {
+		return nil, errBadRouting
+	}
+	return deleteManifestRequest{Path: path}, nil
+}
+
 // ServiceHandler creates an HTTP handler for the munki Service
 func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -70,11 +79,19 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 		encodeResponse,
 		opts...,
 	)
+	deleteManifestHandler := kithttp.NewServer(
+		ctx,
+		makeDeleteManifestEndpoint(svc),
+		decodeDeleteManifestRequest,
+		encodeResponse,
+		opts...,
+	)
 	r := mux.NewRouter()
 	// manifests
 	r.Handle("/api/v1/manifests/{path}", showManifestHandler).Methods("GET")
 	r.Handle("/api/v1/manifests", listManifestsHandler).Methods("GET")
 	r.Handle("/api/v1/manifests", createManifestHandler).Methods("POST")
+	r.Handle("/api/v1/manifests/{path}", deleteManifestHandler).Methods("DELETE")
 	return r
 }
 
