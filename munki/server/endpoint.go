@@ -75,10 +75,31 @@ type deleteManifestResponse struct {
 }
 
 func (r deleteManifestResponse) error() error { return r.Err }
+
 func makeDeleteManifestEndpoint(svc Service) endpoint.Endpoint {
 	return func(ctx context.Context, request interface{}) (interface{}, error) {
 		req := request.(deleteManifestRequest)
 		err := svc.DeleteManifest(ctx, req.Path)
 		return deleteManifestResponse{Err: err}, nil
+	}
+}
+
+type replaceManifestRequest struct {
+	Path string `plist:"filename" json:"filename"`
+	*munki.Manifest
+}
+
+type replaceManifestResponse struct {
+	*munki.Manifest
+	Err error `json:"error,omitempty" plist:"error,omitempty"`
+}
+
+func (r replaceManifestResponse) error() error { return r.Err }
+
+func makeReplaceManifestEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(replaceManifestRequest)
+		manifest, err := svc.ReplaceManifest(ctx, req.Path, req.Manifest)
+		return replaceManifestResponse{Manifest: manifest, Err: err}, nil
 	}
 }

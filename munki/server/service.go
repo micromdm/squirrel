@@ -44,7 +44,10 @@ func (svc service) DeleteManifest(ctx context.Context, name string) error {
 }
 
 func (svc service) ReplaceManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error) {
-	panic("not implemented")
+	if err := svc.repo.DeleteManifest(name); err != nil {
+		return nil, err
+	}
+	return svc.CreateManifest(ctx, name, manifest)
 }
 
 func (svc service) UpdateManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error) {

@@ -51,6 +51,20 @@ func decodeDeleteManifestRequest(_ context.Context, r *http.Request) (interface{
 	return deleteManifestRequest{Path: path}, nil
 }
 
+func decodeReplaceManifestRequest(_ context.Context, r *http.Request) (interface{}, error) {
+	var request replaceManifestRequest
+	if err := json.NewDecoder(r.Body).Decode(&request.Manifest); err != nil {
+		return nil, err
+	}
+	vars := mux.Vars(r)
+	path, ok := vars["path"]
+	if !ok {
+		return nil, errBadRouting
+	}
+	request.Path = path
+	return request, nil
+}
+
 // ServiceHandler creates an HTTP handler for the munki Service
 func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http.Handler {
 	opts := []kithttp.ServerOption{
@@ -86,12 +100,20 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 		encodeResponse,
 		opts...,
 	)
+	replaceManifestHandler := kithttp.NewServer(
+		ctx,
+		makeReplaceManifestEndpoint(svc),
+		decodeReplaceManifestRequest,
+		encodeResponse,
+		opts...,
+	)
 	r := mux.NewRouter()
 	// manifests
 	r.Handle("/api/v1/manifests/{path}", showManifestHandler).Methods("GET")
 	r.Handle("/api/v1/manifests", listManifestsHandler).Methods("GET")
 	r.Handle("/api/v1/manifests", createManifestHandler).Methods("POST")
 	r.Handle("/api/v1/manifests/{path}", deleteManifestHandler).Methods("DELETE")
+	r.Handle("/api/v1/manifests/{path}", replaceManifestHandler).Methods("PUT")
 	return r
 }
 
