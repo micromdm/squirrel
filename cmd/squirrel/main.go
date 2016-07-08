@@ -8,7 +8,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/micromdm/squirrel/munki/api"
+	"golang.org/x/net/context"
+
+	kitlog "github.com/go-kit/kit/log"
+
+	"github.com/micromdm/squirrel/munki/datastore"
+	"github.com/micromdm/squirrel/munki/server"
 )
 
 const usage = "usage: MUNKI_REPO_PATH= SQUIRREL_HTTP_LISTEN_PORT= ape -repo MUNKI_REPO_PATH -port SQUIRREL_HTTP_LISTEN_PORT"
@@ -54,29 +59,44 @@ func main() {
 		log.Fatal("Basic Authentication is used to issue JWT Tokens. You must enable JWT as well")
 	}
 
-	var opts api.ServerOptions
+	var repo datastore.Datastore
 	{
-		if *flJWT {
-			jwtOpt := api.JWTAuth(*flJWTSecret)
-			opts = append(opts, jwtOpt)
-		}
+		repo = &datastore.SimpleRepo{Path: *flRepo}
 
-		// add basic auth
-		if *flBasic {
-			opts = append(opts, api.BasicAuth())
+	}
+
+	var err error
+	var svc munkiserver.Service
+	{
+		svc, err = munkiserver.NewService(repo)
+		if err != nil {
+			log.Fatal(err)
 		}
 	}
-	repo := api.SimpleRepo(*flRepo)
-	opts = append(opts, repo)
-	apiHandler := api.NewServer(opts...)
-	http.Handle("/", apiHandler)
+
+	var logger kitlog.Logger
+	{
+		logger = kitlog.NewLogfmtLogger(os.Stderr)
+		logger = kitlog.NewContext(logger).With("ts", kitlog.DefaultTimestampUTC)
+		logger = kitlog.NewContext(logger).With("caller", kitlog.DefaultCaller)
+	}
+
+	ctx := context.Background()
+	var h http.Handler
+	{
+		h = munkiserver.ServiceHandler(ctx, svc, logger)
+	}
+
+	mux := http.NewServeMux()
+	mux.Handle("/api/v1/", h)
+	mux.Handle("/repo/", http.StripPrefix("/repo/", http.FileServer(http.Dir(*flRepo))))
 
 	port := fmt.Sprintf(":%v", *flPort)
 
 	if *flTLS {
-		log.Fatal(http.ListenAndServeTLS(port, *flTLSCert, *flTLSKey, nil))
+		log.Fatal(http.ListenAndServeTLS(port, *flTLSCert, *flTLSKey, mux))
 	} else {
-		log.Fatal(http.ListenAndServe(port, nil))
+		log.Fatal(http.ListenAndServe(port, mux))
 	}
 }
 
