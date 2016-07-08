@@ -13,6 +13,7 @@ type Service interface {
 	CreateManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error)
 	ReplaceManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error)
 	DeleteManifest(ctx context.Context, name string) error
+	UpdateManifest(ctx context.Context, name string, payload *munki.ManifestPayload) (*munki.Manifest, error)
 }
 
 type service struct {
@@ -32,8 +33,7 @@ func (svc service) CreateManifest(ctx context.Context, name string, manifest *mu
 	if err != nil {
 		return nil, err
 	}
-	manifest.Filename = name
-	if err := svc.repo.SaveManifest(manifest); err != nil {
+	if err := svc.repo.SaveManifest(name, manifest); err != nil {
 		return nil, err
 	}
 	return manifest, nil
@@ -50,8 +50,16 @@ func (svc service) ReplaceManifest(ctx context.Context, name string, manifest *m
 	return svc.CreateManifest(ctx, name, manifest)
 }
 
-func (svc service) UpdateManifest(ctx context.Context, name string, manifest *munki.Manifest) (*munki.Manifest, error) {
-	panic("not implemented")
+func (svc service) UpdateManifest(ctx context.Context, name string, payload *munki.ManifestPayload) (*munki.Manifest, error) {
+	manifest, err := svc.repo.Manifest(name)
+	if err != nil {
+		return nil, err
+	}
+	manifest.UpdateFromPayload(payload)
+	if err := svc.repo.SaveManifest(name, manifest); err != nil {
+		return nil, err
+	}
+	return manifest, nil
 }
 
 // NewService creates a new munki api service

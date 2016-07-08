@@ -47,11 +47,11 @@ func (r *SimpleRepo) NewManifest(name string) (*munki.Manifest, error) {
 }
 
 // SaveManifest saves a manifest to the datastore
-func (r *SimpleRepo) SaveManifest(manifest *munki.Manifest) error {
-	if manifest.Filename == "" {
-		return errors.New("filename key must be set")
+func (r *SimpleRepo) SaveManifest(path string, manifest *munki.Manifest) error {
+	if path == "" {
+		return errors.New("must specify a manifest name")
 	}
-	manifestPath := fmt.Sprintf("%v/manifests/%v", r.Path, manifest.Filename)
+	manifestPath := fmt.Sprintf("%v/manifests/%v", r.Path, path)
 	file, err := os.OpenFile(manifestPath, os.O_WRONLY, 0755)
 	if err != nil {
 		return err

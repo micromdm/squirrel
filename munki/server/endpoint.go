@@ -103,3 +103,23 @@ func makeReplaceManifestEndpoint(svc Service) endpoint.Endpoint {
 		return replaceManifestResponse{Manifest: manifest, Err: err}, nil
 	}
 }
+
+type updateManifestRequest struct {
+	Path string `plist:"filename" json:"filename"`
+	*munki.ManifestPayload
+}
+
+type updateManifestResponse struct {
+	*munki.Manifest
+	Err error `json:"error,omitempty" plist:"error,omitempty"`
+}
+
+func (r updateManifestResponse) error() error { return r.Err }
+
+func makeUpdateManifestEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(updateManifestRequest)
+		manifest, err := svc.UpdateManifest(ctx, req.Path, req.ManifestPayload)
+		return updateManifestResponse{Manifest: manifest, Err: err}, nil
+	}
+}

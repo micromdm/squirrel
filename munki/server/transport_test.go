@@ -32,6 +32,27 @@ func TestShowManifests(t *testing.T) {
 	testShowManifestHTTP(t, server, "site_none", http.StatusNotFound)
 }
 
+func TestUpdateManifest(t *testing.T) {
+	server, _ := newServer(t)
+	defer server.Close()
+	manifests := []*munki.Manifest{
+		&munki.Manifest{
+			Filename: "update-manifest",
+			Catalogs: []string{"production", "testing"},
+		},
+	}
+
+	for _, m := range manifests {
+		os.Remove("testdata/testrepo/manifests/" + m.Filename)
+		testCreateManifestHTTP(t, server, m.Filename, m, http.StatusOK)
+		m1 := &munki.ManifestPayload{
+			Catalogs: &[]string{"foo"},
+		}
+		testUpdateManifestHTTP(t, server, m.Filename, m1, http.StatusOK)
+		os.Remove("testdata/testrepo/manifests/" + m.Filename)
+	}
+}
+
 func TestReplaceManifest(t *testing.T) {
 	server, _ := newServer(t)
 	defer server.Close()
@@ -120,6 +141,29 @@ func testReplaceManifestHTTP(t *testing.T, server *httptest.Server, path string,
 	}
 	body := ioutil.NopCloser(bytes.NewBuffer(data))
 	req, err := http.NewRequest("PUT", theURL, body)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != expectedStatus {
+		fmt.Println(theURL)
+		io.Copy(os.Stdout, resp.Body)
+		t.Fatal("expected", expectedStatus, "got", resp.StatusCode)
+	}
+}
+
+func testUpdateManifestHTTP(t *testing.T, server *httptest.Server, path string, m *munki.ManifestPayload, expectedStatus int) {
+	client := http.DefaultClient
+	theURL := server.URL + "/api/v1/manifests/" + path
+	data, err := json.Marshal(m)
+	if err != nil {
+		t.Fatal(err)
+	}
+	body := ioutil.NopCloser(bytes.NewBuffer(data))
+	req, err := http.NewRequest("PATCH", theURL, body)
 	if err != nil {
 		t.Fatal(err)
 	}

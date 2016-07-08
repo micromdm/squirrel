@@ -5,7 +5,7 @@ type ManifestStore interface {
 	AllManifests() (*ManifestCollection, error)
 	Manifest(name string) (*Manifest, error)
 	NewManifest(name string) (*Manifest, error)
-	SaveManifest(manifest *Manifest) error
+	SaveManifest(path string, manifest *Manifest) error
 	DeleteManifest(name string) error
 }
 
