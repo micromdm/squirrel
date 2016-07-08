@@ -6,13 +6,13 @@ import (
 	"os"
 
 	"github.com/groob/plist"
-	"github.com/micromdm/squirrel/munki/models"
+	"github.com/micromdm/squirrel/munki/munki"
 )
 
 var makecatalogs = make(chan bool, 1)
 
 func (r *SimpleRepo) makeCatalogs(done chan bool) {
-	catalogs := map[string]*models.Catalogs{}
+	catalogs := map[string]*munki.Catalogs{}
 	pkgsinfos, err := r.AllPkgsinfos()
 	if err != nil {
 		log.Println(err)
@@ -34,7 +34,7 @@ func (r *SimpleRepo) makeCatalogs(done chan bool) {
 	done <- true
 }
 
-func (r *SimpleRepo) saveCatalog(name string, catalogs *models.Catalogs) error {
+func (r *SimpleRepo) saveCatalog(name string, catalogs *munki.Catalogs) error {
 	catalogsPath := fmt.Sprintf("%v/catalogs/%v", r.Path, name)
 	var file *os.File
 	var err error

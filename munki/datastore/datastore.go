@@ -19,7 +19,7 @@ var (
 
 // Datastore is an interface around munki storage
 type Datastore interface {
-	models.PkgsinfoStore
+	munki.PkgsinfoStore
 	models.PkgStore
 	munki.ManifestStore
 }
@@ -28,7 +28,7 @@ type Datastore interface {
 type SimpleRepo struct {
 	Path           string
 	indexManifests map[string]*munki.Manifest
-	indexPkgsinfo  map[string]*models.PkgsInfo
+	indexPkgsinfo  map[string]*munki.PkgsInfo
 }
 
 func deleteFile(path string) error {
