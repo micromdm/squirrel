@@ -26,3 +26,23 @@ func makeListPkgsinfosEndpoint(svc Service) endpoint.Endpoint {
 		return listPkgsinfosResponse{pkgsinfos: pkgsinfos, Err: err}, nil
 	}
 }
+
+type createPkgsinfoRequest struct {
+	Filename string `plist:"filename" json:"filename"`
+	*munki.PkgsInfo
+}
+
+type createPkgsinfoResponse struct {
+	*munki.PkgsInfo
+	Err error `json:"error,omitempty" plist:"error,omitempty"`
+}
+
+func (r createPkgsinfoResponse) error() error { return r.Err }
+
+func makeCreatePkgsinfoEndpoint(svc Service) endpoint.Endpoint {
+	return func(ctx context.Context, request interface{}) (interface{}, error) {
+		req := request.(createPkgsinfoRequest)
+		pkgsinfo, err := svc.CreatePkgsinfo(ctx, req.Filename, req.PkgsInfo)
+		return createPkgsinfoResponse{PkgsInfo: pkgsinfo, Err: err}, nil
+	}
+}

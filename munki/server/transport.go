@@ -77,6 +77,13 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 		encodeResponse,
 		opts...,
 	)
+	createPkgsinfoHandler := kithttp.NewServer(
+		ctx,
+		makeCreatePkgsinfoEndpoint(svc),
+		decodeCreatePkgsinfoRequest,
+		encodeResponse,
+		opts...,
+	)
 
 	r := mux.NewRouter()
 
@@ -88,6 +95,7 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 	r.Handle("/api/v1/manifests/{path}", updateManifestHandler).Methods("PATCH")
 
 	r.Handle("/api/v1/pkgsinfos", listPkgsinfosHandler).Methods("GET")
+	r.Handle("/api/v1/pkgsinfos", createPkgsinfoHandler).Methods("POST")
 	return r
 }
 
