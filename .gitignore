@@ -2,3 +2,5 @@ cmd/squirrel/squirrel
 cmd/caddy-squirrel/squirrel
 Caddyfile
 build/
+elm-stuff/
+elm.js

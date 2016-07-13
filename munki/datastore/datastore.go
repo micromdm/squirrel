@@ -20,6 +20,7 @@ var (
 type Datastore interface {
 	munki.PkgsinfoStore
 	munki.ManifestStore
+	munki.DeviceStore
 }
 
 // SimpleRepo is a filesystem based backend
@@ -27,6 +28,7 @@ type SimpleRepo struct {
 	Path           string
 	indexManifests map[string]*munki.Manifest
 	indexPkgsinfo  map[string]*munki.PkgsInfo
+	indexDevices   map[string]munki.Device
 }
 
 func deleteFile(path string) error {

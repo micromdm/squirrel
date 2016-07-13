@@ -213,9 +213,16 @@ func testListManifestsHTTP(t *testing.T, server *httptest.Server, expectedStatus
 	if err != nil {
 		t.Fatal(err)
 	}
+	// check that status is expected
 	if resp.StatusCode != expectedStatus {
 		io.Copy(os.Stdout, resp.Body)
 		t.Fatal("expected", expectedStatus, "got", resp.StatusCode)
 	}
-	return nil
+
+	// attempt to decode collection
+	var c munki.ManifestCollection
+	if err := json.NewDecoder(resp.Body).Decode(&c); err != nil {
+		t.Fatal("list manifests: failed to decode ManifestCollection: err=%v\n", err)
+	}
+	return &c
 }

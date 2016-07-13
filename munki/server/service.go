@@ -6,6 +6,7 @@ import "github.com/micromdm/squirrel/munki/datastore"
 type Service interface {
 	ManifestService
 	PkgsinfoService
+	DeviceService
 }
 
 type service struct {
