@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/micromdm/squirrel/munki/models"
 	"github.com/micromdm/squirrel/munki/munki"
 )
 
@@ -20,7 +19,6 @@ var (
 // Datastore is an interface around munki storage
 type Datastore interface {
 	munki.PkgsinfoStore
-	models.PkgStore
 	munki.ManifestStore
 }
 
