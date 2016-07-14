@@ -14,8 +14,22 @@ type listManifestsResponse struct {
 	Err       error `json:"error,omitempty" plist:"error,omitempty"`
 }
 
+// encode a list view which includes the Filename parameter for each manifest
 func (r listManifestsResponse) subset() interface{} {
-	return r.manifests
+	type manifestView struct {
+		Filename string `plist:"filename,omitempty" json:"filename,omitempty"`
+		*munki.Manifest
+	}
+	var view []*manifestView
+	for _, item := range *r.manifests {
+		viewItem := &manifestView{
+			item.Filename,
+			item,
+		}
+		view = append(view, viewItem)
+	}
+
+	return view
 }
 
 func (r listManifestsResponse) error() error { return r.Err }

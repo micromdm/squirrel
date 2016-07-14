@@ -4,6 +4,10 @@ import Html exposing (..)
 import Navigation
 import String
 import UrlParser exposing (Parser, (</>), format, int, oneOf, string)
+import Manifest.Models exposing (Manifest)
+import Manifest.Messages
+import Manifest.Update
+import Client.Http exposing (..)
 
 
 -- Update
@@ -11,6 +15,7 @@ import UrlParser exposing (Parser, (</>), format, int, oneOf, string)
 
 type Msg
     = NoOp
+    | ManifestMsg Manifest.Messages.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -19,9 +24,16 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
+        ManifestMsg subMsg ->
+            let
+                ( manifests', cmd ) =
+                    Manifest.Update.update subMsg model.manifests
+            in
+                ( { model | manifests = manifests' }, Cmd.map ManifestMsg cmd )
 
 
--- View
+
+-- VIEW
 
 
 view : Model -> Html Msg
@@ -42,6 +54,7 @@ viewHome model =
 
 type alias Model =
     { page : Page
+    , manifests : List Manifest
     }
 
 
@@ -102,10 +115,18 @@ main =
 
 init : Result String Page -> ( Model, Cmd Msg )
 init result =
-    urlUpdate result initialModel
+    let
+        ( model, routeMsg ) =
+            urlUpdate result initialModel
+
+        manifestsMsg =
+            Cmd.map ManifestMsg fetchAllManifests
+    in
+        ( model, Cmd.batch [ routeMsg, manifestsMsg ] )
 
 
 initialModel : Model
 initialModel =
     { page = Home
+    , manifests = []
     }

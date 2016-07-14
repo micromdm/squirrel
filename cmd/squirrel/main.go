@@ -90,6 +90,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/api/v1/", h)
 	mux.Handle("/repo/", http.StripPrefix("/repo/", http.FileServer(http.Dir(*flRepo))))
+	mux.Handle("/", http.FileServer(http.Dir("frontend")))
 
 	port := fmt.Sprintf(":%v", *flPort)
 
