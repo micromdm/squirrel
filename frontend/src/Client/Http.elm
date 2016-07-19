@@ -5,12 +5,19 @@ import Task
 import Json.Decode
 import Manifest.Models exposing (Manifest, manifest)
 import Manifest.Messages exposing (..)
+import ManifestForm.Messages exposing (..)
 
 
-fetchAllManifests : Cmd Msg
+fetchAllManifests : Cmd Manifest.Messages.Msg
 fetchAllManifests =
     Http.get (Json.Decode.list manifest) "/api/v1/manifests"
-        |> Task.perform FetchAllFail FetchAllDone
+        |> Task.perform FetchManifestsFail FetchManifestsDone
+
+
+fetchManifest : String -> Cmd ManifestForm.Messages.Msg
+fetchManifest name =
+    Http.get manifest ("/api/v1/manifests/" ++ name)
+        |> Task.perform FetchManifestFail (FetchManifest name)
 
 
 reportError : Http.Error -> Http.Error

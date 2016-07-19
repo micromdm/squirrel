@@ -1,0 +1,18 @@
+.manifestForm {
+    display: flex;
+    flex-flow: row wrap;
+}
+.manifestFormGeneral {
+    display: flex;
+    flex-flow: column wrap;
+    margin-left: 80px;
+}
+
+.manifestFormButtons {
+    display: flex;
+    max-width: 300px;
+    flex-flow: row wrap;
+    margin-top: 10px;
+    justify-content: space-between;
+
+}

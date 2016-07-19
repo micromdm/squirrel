@@ -5,5 +5,5 @@ import Manifest.Models exposing (..)
 
 
 type Msg
-    = FetchAllDone (List Manifest)
-    | FetchAllFail Http.Error
+    = FetchManifestsDone (List Manifest)
+    | FetchManifestsFail Http.Error

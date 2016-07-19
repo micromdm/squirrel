@@ -1,54 +1,54 @@
 module Manifest.Models exposing (manifest, newManifest, Manifest)
 
 import Json.Decode exposing ((:=))
-import Json.Decode.Extra exposing ((|:))
+import Json.Decode.Extra exposing ((|:), withDefault)
 
 
 type alias Manifest =
     { name :
         String
     , catalogs :
-        Maybe (List String)
+        List String
     , displayName :
         Maybe String
     , includedManifests :
-        Maybe (List String)
+        List String
     , notes :
         Maybe String
     , user :
         Maybe String
     , managedInstalls :
-        Maybe (List String)
+        List String
     , managedUninstalls :
-        Maybe (List String)
+        List String
     , optionalInstalls :
-        Maybe (List String)
+        List String
     }
 
 
 newManifest : Manifest
 newManifest =
     { name = ""
-    , catalogs = Nothing
+    , catalogs = []
     , displayName = Nothing
-    , includedManifests = Nothing
+    , includedManifests = []
     , notes = Nothing
     , user = Nothing
-    , managedInstalls = Nothing
-    , managedUninstalls = Nothing
-    , optionalInstalls = Nothing
+    , managedInstalls = []
+    , managedUninstalls = []
+    , optionalInstalls = []
     }
 
 
 manifest : Json.Decode.Decoder Manifest
 manifest =
     Json.Decode.succeed Manifest
-        |: ("filename" := Json.Decode.string)
-        |: (Json.Decode.maybe ("catalogs" := Json.Decode.list Json.Decode.string))
+        |: (withDefault "" ("filename" := Json.Decode.string))
+        |: (withDefault [] ("catalogs" := Json.Decode.list Json.Decode.string))
         |: (Json.Decode.maybe ("display_name" := Json.Decode.string))
-        |: (Json.Decode.maybe ("include_manifests" := Json.Decode.list Json.Decode.string))
+        |: (withDefault [] ("include_manifests" := Json.Decode.list Json.Decode.string))
         |: (Json.Decode.maybe ("notes" := Json.Decode.string))
         |: (Json.Decode.maybe ("user" := Json.Decode.string))
-        |: (Json.Decode.maybe ("managed_installs" := Json.Decode.list Json.Decode.string))
-        |: (Json.Decode.maybe ("managed_uninstalls" := Json.Decode.list Json.Decode.string))
-        |: (Json.Decode.maybe ("optional_installs" := Json.Decode.list Json.Decode.string))
+        |: (withDefault [] ("managed_installs" := Json.Decode.list Json.Decode.string))
+        |: (withDefault [] ("managed_uninstalls" := Json.Decode.list Json.Decode.string))
+        |: (withDefault [] ("optional_installs" := Json.Decode.list Json.Decode.string))
