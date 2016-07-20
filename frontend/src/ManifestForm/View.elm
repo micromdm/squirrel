@@ -68,7 +68,7 @@ view model =
 
                 catalog idx catalogName =
                     Toggles.switch Mdl
-                        [ 4 + idx ]
+                        [ 4, idx ]
                         model.mdl
                         [ Toggles.value (hasCatalog catalogName)
                         , Toggles.onClick <| SetCatalog catalogName (hasCatalog catalogName)
@@ -80,17 +80,47 @@ view model =
 
                 managedInstall idx install =
                     Toggles.checkbox Mdl
-                        [ 500 + idx ]
+                        [ 5, idx ]
                         model.mdl
                         [ Toggles.value True ]
                         [ text install ]
 
+                optionalInstall idx install =
+                    Toggles.checkbox Mdl
+                        [ 6, idx ]
+                        model.mdl
+                        [ Toggles.value True ]
+                        [ text install ]
+
+                includedManifest idx included =
+                    Toggles.checkbox Mdl
+                        [ 7, idx ]
+                        model.mdl
+                        [ Toggles.value True ]
+                        [ text included ]
+
+                managedUninstall idx uninstall =
+                    Toggles.checkbox Mdl
+                        [ 8, idx ]
+                        model.mdl
+                        [ Toggles.value True ]
+                        [ text uninstall ]
+
                 managedInstalls =
                     List.indexedMap (managedInstall) manifest.managedInstalls
 
+                optionalInstalls =
+                    List.indexedMap (optionalInstall) manifest.optionalInstalls
+
+                includedManifests =
+                    List.indexedMap (includedManifest) manifest.includedManifests
+
+                managedUninstalls =
+                    List.indexedMap (managedUninstall) manifest.managedUninstalls
+
                 save =
                     Button.render Mdl
-                        [ 1000 ]
+                        [ 9 ]
                         model.mdl
                         [ Button.raised
                         , Button.ripple
@@ -101,7 +131,7 @@ view model =
 
                 cancel =
                     Button.render Mdl
-                        [ 1001 ]
+                        [ 10 ]
                         model.mdl
                         [ Button.raised
                         , Button.ripple
@@ -123,5 +153,11 @@ view model =
                     , div [ class "manifestFormAdvanced" ]
                         [ text "Managed Installs"
                         , div [] managedInstalls
+                        , text "Managed Uninstalls"
+                        , div [] managedUninstalls
+                        , text "Optional Installs"
+                        , div [] optionalInstalls
+                        , text "Included Manifests"
+                        , div [] includedManifests
                         ]
                     ]
