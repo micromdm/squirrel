@@ -55,6 +55,46 @@ update message model =
             in
                 { model | manifestForm = form' } ! []
 
+        SetManagedInstalls install action ->
+            let
+                removeItem manifest =
+                    { manifest | managedInstalls = List.filter (\i -> i /= install) manifest.managedInstalls }
+
+                form' =
+                    Maybe.map (removeItem) model.manifestForm
+            in
+                { model | manifestForm = form' } ! []
+
+        SetOptionalInstalls install action ->
+            let
+                removeItem manifest =
+                    { manifest | optionalInstalls = List.filter (\i -> i /= install) manifest.optionalInstalls }
+
+                form' =
+                    Maybe.map (removeItem) model.manifestForm
+            in
+                { model | manifestForm = form' } ! []
+
+        SetManagedUninstalls install action ->
+            let
+                removeItem manifest =
+                    { manifest | managedUninstalls = List.filter (\i -> i /= install) manifest.managedUninstalls }
+
+                form' =
+                    Maybe.map (removeItem) model.manifestForm
+            in
+                { model | manifestForm = form' } ! []
+
+        SetIncludedManifests included action ->
+            let
+                removeItem manifest =
+                    { manifest | includedManifests = List.filter (\i -> i /= included) manifest.includedManifests }
+
+                form' =
+                    Maybe.map (removeItem) model.manifestForm
+            in
+                { model | manifestForm = form' } ! []
+
         ClearForm ->
             ( { model | manifestForm = Nothing }, Navigation.newUrl "#manifests" )
 

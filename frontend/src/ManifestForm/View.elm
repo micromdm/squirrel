@@ -82,28 +82,36 @@ view model =
                     Toggles.checkbox Mdl
                         [ 5, idx ]
                         model.mdl
-                        [ Toggles.value True ]
+                        [ Toggles.value True
+                        , Toggles.onClick <| SetManagedInstalls install Remove
+                        ]
                         [ text install ]
 
                 optionalInstall idx install =
                     Toggles.checkbox Mdl
                         [ 6, idx ]
                         model.mdl
-                        [ Toggles.value True ]
+                        [ Toggles.value True
+                        , Toggles.onClick <| SetOptionalInstalls install Remove
+                        ]
                         [ text install ]
 
                 includedManifest idx included =
                     Toggles.checkbox Mdl
                         [ 7, idx ]
                         model.mdl
-                        [ Toggles.value True ]
+                        [ Toggles.value True
+                        , Toggles.onClick <| SetIncludedManifests included Remove
+                        ]
                         [ text included ]
 
                 managedUninstall idx uninstall =
                     Toggles.checkbox Mdl
                         [ 8, idx ]
                         model.mdl
-                        [ Toggles.value True ]
+                        [ Toggles.value True
+                        , Toggles.onClick <| SetManagedUninstalls uninstall Remove
+                        ]
                         [ text uninstall ]
 
                 managedInstalls =

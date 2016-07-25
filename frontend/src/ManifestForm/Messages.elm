@@ -5,6 +5,11 @@ import Manifest.Models exposing (..)
 import Material
 
 
+type Action
+    = Add
+    | Remove
+
+
 type Msg
     = FetchManifest String Manifest
     | FetchManifestFail Http.Error
@@ -13,5 +18,9 @@ type Msg
     | SetDisplayName String
     | SetUser String
     | SetNotes String
+    | SetManagedInstalls String Action
+    | SetOptionalInstalls String Action
+    | SetManagedUninstalls String Action
+    | SetIncludedManifests String Action
     | ClearForm
     | NoOp
