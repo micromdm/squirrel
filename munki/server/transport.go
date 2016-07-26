@@ -121,7 +121,7 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 
 	r.Handle("/api/v1/devices", listDevicesHandler).Methods("GET")
 	r.Handle("/api/v1/devices", createDeviceHandler).Methods("POST")
-	r.Handle("/api/v1/devices", deleteDeviceHandler).Methods("DELETE")
+	r.Handle("/api/v1/devices/{path}", deleteDeviceHandler).Methods("DELETE")
 	return r
 }
 

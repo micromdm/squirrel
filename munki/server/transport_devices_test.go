@@ -13,6 +13,12 @@ import (
 	"github.com/micromdm/squirrel/munki/munki"
 )
 
+func TestListDevices(t *testing.T) {
+	server, _ := newServer(t)
+	defer server.Close()
+	testListDevicesHTTP(t, server, http.StatusOK)
+}
+
 func TestCreateDevice(t *testing.T) {
 	server, _ := newServer(t)
 	defer server.Close()
@@ -33,7 +39,21 @@ type createDeviceRequest struct {
 	munki.Device
 }
 
-func testCreateDeviceHTTP(t *testing.T, server *httptest.Server, serial string, device munki.Device, expectedStatus int) *munki.Manifest {
+func testListDevicesHTTP(t *testing.T, server *httptest.Server, expectedStatus int) []munki.Device {
+	client := http.DefaultClient
+	theURL := server.URL + "/api/v1/devices"
+	resp, err := client.Get(theURL)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.StatusCode != expectedStatus {
+		io.Copy(os.Stdout, resp.Body)
+		t.Fatal("expected", expectedStatus, "got", resp.StatusCode)
+	}
+	return nil
+}
+
+func testCreateDeviceHTTP(t *testing.T, server *httptest.Server, serial string, device munki.Device, expectedStatus int) *munki.Device {
 	client := http.DefaultClient
 	theURL := server.URL + "/api/v1/devices"
 	var req = &createDeviceRequest{

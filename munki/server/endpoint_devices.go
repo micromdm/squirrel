@@ -60,7 +60,6 @@ func makeShowDeviceEndpoint(svc Service) endpoint.Endpoint {
 }
 
 type createDeviceRequest struct {
-	SerialNumber string `plist:"serial_number,omitempty" json:"serial_number,omitempty"`
 	*munki.Device
 }
 
