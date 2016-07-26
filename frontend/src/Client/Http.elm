@@ -5,6 +5,8 @@ import Task
 import Json.Decode
 import Manifest.Models exposing (Manifest, manifest)
 import Manifest.Messages exposing (..)
+import Device.Models exposing (Device, device)
+import Device.Messages exposing (..)
 import ManifestForm.Messages exposing (..)
 
 
@@ -18,6 +20,12 @@ fetchManifest : String -> Cmd ManifestForm.Messages.Msg
 fetchManifest name =
     Http.get manifest ("/api/v1/manifests/" ++ name)
         |> Task.perform FetchManifestFail (FetchManifest name)
+
+
+fetchAllDevices : Cmd Device.Messages.Msg
+fetchAllDevices =
+    Http.get (Json.Decode.list device) "/api/v1/devices"
+        |> Task.perform FetchDevicesFail FetchDevicesDone
 
 
 reportError : Http.Error -> Http.Error
