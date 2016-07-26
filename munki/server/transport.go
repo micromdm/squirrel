@@ -85,6 +85,28 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 		opts...,
 	)
 
+	listDevicesHandler := kithttp.NewServer(
+		ctx,
+		makeListDevicesEndpoint(svc),
+		decodeListDevicesRequest,
+		encodeResponse,
+		opts...,
+	)
+	createDeviceHandler := kithttp.NewServer(
+		ctx,
+		makeCreateDeviceEndpoint(svc),
+		decodeCreateDeviceRequest,
+		encodeResponse,
+		opts...,
+	)
+	deleteDeviceHandler := kithttp.NewServer(
+		ctx,
+		makeDeleteDeviceEndpoint(svc),
+		decodeDeleteDeviceRequest,
+		encodeResponse,
+		opts...,
+	)
+
 	r := mux.NewRouter()
 
 	r.Handle("/api/v1/manifests/{path}", showManifestHandler).Methods("GET")
@@ -96,6 +118,10 @@ func ServiceHandler(ctx context.Context, svc Service, logger kitlog.Logger) http
 
 	r.Handle("/api/v1/pkgsinfos", listPkgsinfosHandler).Methods("GET")
 	r.Handle("/api/v1/pkgsinfos", createPkgsinfoHandler).Methods("POST")
+
+	r.Handle("/api/v1/devices", listDevicesHandler).Methods("GET")
+	r.Handle("/api/v1/devices", createDeviceHandler).Methods("POST")
+	r.Handle("/api/v1/devices", deleteDeviceHandler).Methods("DELETE")
 	return r
 }
 

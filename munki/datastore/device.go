@@ -63,7 +63,9 @@ func (r *SimpleRepo) SaveDevice(name string, device *munki.Device) error {
 	}
 	defer file.Close()
 
-	if err := plist.NewEncoder(file).Encode(device); err != nil {
+	enc := plist.NewEncoder(file)
+	enc.Indent("  ")
+	if err := enc.Encode(device); err != nil {
 		return err
 	}
 	return nil
