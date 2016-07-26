@@ -1,6 +1,8 @@
 package munkiserver
 
 import (
+	"time"
+
 	"github.com/micromdm/squirrel/munki/munki"
 	"golang.org/x/net/context"
 )
@@ -27,6 +29,7 @@ func (svc service) CreateDevice(ctx context.Context, name string, dev *munki.Dev
 	if err != nil {
 		return nil, err
 	}
+	dev.DateAdded = time.Now()
 	if err := svc.repo.SaveDevice(name, dev); err != nil {
 		return nil, err
 	}
