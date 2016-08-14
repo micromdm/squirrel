@@ -1,11 +1,14 @@
 package httpserver
 
 import (
+	"bytes"
+	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 func TestNewReplacer(t *testing.T) {
@@ -21,19 +24,26 @@ func TestNewReplacer(t *testing.T) {
 
 	switch v := rep.(type) {
 	case *replacer:
-		if v.replacements["{host}"] != "localhost" {
+		if v.replacements["{host}"]() != "localhost" {
 			t.Error("Expected host to be localhost")
 		}
-		if v.replacements["{method}"] != "POST" {
+		if v.replacements["{method}"]() != "POST" {
 			t.Error("Expected request method  to be POST")
 		}
 
 		// Response placeholders should only be set after call to Replace()
-		if got, want := v.replacements["{status}"], ""; got != want {
+		got, want := "", ""
+		if getReplacement, ok := v.replacements["{status}"]; ok {
+			got = getReplacement()
+		}
+		if want := ""; got != want {
 			t.Errorf("Expected status to NOT be set before Replace() is called; was: %s", got)
 		}
-		rep.Replace("foobar")
-		if got, want := v.replacements["{status}"], "200"; got != want {
+		rep.Replace("{foobar}")
+		if getReplacement, ok := v.replacements["{status}"]; ok {
+			got = getReplacement()
+		}
+		if want = "200"; got != want {
 			t.Errorf("Expected status to be %s, was: %s", want, got)
 		}
 	default:
@@ -58,54 +68,49 @@ func TestReplace(t *testing.T) {
 	if err != nil {
 		t.Fatal("Failed to determine hostname\n")
 	}
-	if expected, actual := "This hostname is "+hostname, repl.Replace("This hostname is {hostname}"); expected != actual {
-		t.Errorf("{hostname} replacement: expected '%s', got '%s'", expected, actual)
+
+	testCases := []struct {
+		template string
+		expect   string
+	}{
+		{"This hostname is {hostname}", "This hostname is " + hostname},
+		{"This host is {host}.", "This host is localhost."},
+		{"This request method is {method}.", "This request method is POST."},
+		{"The response status is {status}.", "The response status is 200."},
+		{"The Custom header is {>Custom}.", "The Custom header is foobarbaz."},
+		{"The request is {request}.", "The request is POST / HTTP/1.1\\r\\nHost: localhost\\r\\nCustom: foobarbaz\\r\\nShorterval: 1\\r\\n\\r\\n."},
+		{"The cUsToM header is {>cUsToM}...", "The cUsToM header is foobarbaz..."},
+		{"The Non-Existent header is {>Non-Existent}.", "The Non-Existent header is -."},
+		{"Bad {host placeholder...", "Bad {host placeholder..."},
+		{"Bad {>Custom placeholder", "Bad {>Custom placeholder"},
+		{"Bad {>Custom placeholder {>ShorterVal}", "Bad -"},
 	}
 
-	if expected, actual := "This host is localhost.", repl.Replace("This host is {host}."); expected != actual {
-		t.Errorf("{host} replacement: expected '%s', got '%s'", expected, actual)
-	}
-	if expected, actual := "This request method is POST.", repl.Replace("This request method is {method}."); expected != actual {
-		t.Errorf("{method} replacement: expected '%s', got '%s'", expected, actual)
-	}
-	if expected, actual := "The response status is 200.", repl.Replace("The response status is {status}."); expected != actual {
-		t.Errorf("{status} replacement: expected '%s', got '%s'", expected, actual)
-	}
-	if expected, actual := "The Custom header is foobarbaz.", repl.Replace("The Custom header is {>Custom}."); expected != actual {
-		t.Errorf("{>Custom} replacement: expected '%s', got '%s'", expected, actual)
-	}
-	if expected, actual := "The request is POST / HTTP/1.1\\r\\nHost: localhost\\r\\nCustom: foobarbaz\\r\\nShorterval: 1\\r\\n\\r\\n.", repl.Replace("The request is {request}."); expected != actual {
-		t.Errorf("{request} replacement: expected '%s', got '%s'", expected, actual)
+	for _, c := range testCases {
+		if expected, actual := c.expect, repl.Replace(c.template); expected != actual {
+			t.Errorf("for template '%s', expected '%s', got '%s'", c.template, expected, actual)
+		}
 	}
 
-	// Test header case-insensitivity
-	if expected, actual := "The cUsToM header is foobarbaz...", repl.Replace("The cUsToM header is {>cUsToM}..."); expected != actual {
-		t.Errorf("{>cUsToM} replacement: expected '%s', got '%s'", expected, actual)
+	complexCases := []struct {
+		template     string
+		replacements map[string]func() string
+		expect       string
+	}{
+		{"/a{1}/{2}",
+			map[string]func() string{
+				"{1}": func() string { return "12" },
+				"{2}": func() string { return "" }},
+			"/a12/"},
 	}
 
-	// Test non-existent header/value
-	if expected, actual := "The Non-Existent header is -.", repl.Replace("The Non-Existent header is {>Non-Existent}."); expected != actual {
-		t.Errorf("{>Non-Existent} replacement: expected '%s', got '%s'", expected, actual)
-	}
-
-	// Test bad placeholder
-	if expected, actual := "Bad {host placeholder...", repl.Replace("Bad {host placeholder..."); expected != actual {
-		t.Errorf("bad placeholder: expected '%s', got '%s'", expected, actual)
-	}
-
-	// Test bad header placeholder
-	if expected, actual := "Bad {>Custom placeholder", repl.Replace("Bad {>Custom placeholder"); expected != actual {
-		t.Errorf("bad header placeholder: expected '%s', got '%s'", expected, actual)
-	}
-
-	// Test bad header placeholder with valid one later
-	if expected, actual := "Bad -", repl.Replace("Bad {>Custom placeholder {>ShorterVal}"); expected != actual {
-		t.Errorf("bad header placeholders: expected '%s', got '%s'", expected, actual)
-	}
-
-	// Test shorter header value with multiple placeholders
-	if expected, actual := "Short value 1 then foobarbaz.", repl.Replace("Short value {>ShorterVal} then {>Custom}."); expected != actual {
-		t.Errorf("short value: expected '%s', got '%s'", expected, actual)
+	for _, c := range complexCases {
+		repl := &replacer{
+			replacements: c.replacements,
+		}
+		if expected, actual := c.expect, repl.Replace(c.template); expected != actual {
+			t.Errorf("for template '%s', expected '%s', got '%s'", c.template, expected, actual)
+		}
 	}
 }
 
@@ -136,5 +141,50 @@ func TestSet(t *testing.T) {
 	}
 	if repl.Replace("The value of variable is {variable}") != "The value of variable is value" {
 		t.Error("Expected variable replacement failed")
+	}
+}
+
+func TestRound(t *testing.T) {
+	var tests = map[time.Duration]time.Duration{
+		// 599.935µs -> 560µs
+		559935 * time.Nanosecond: 560 * time.Microsecond,
+		// 1.55ms    -> 2ms
+		1550 * time.Microsecond: 2 * time.Millisecond,
+		// 1.5555s   -> 1.556s
+		1555500 * time.Microsecond: 1556 * time.Millisecond,
+		// 1m2.0035s -> 1m2.004s
+		62003500 * time.Microsecond: 62004 * time.Millisecond,
+	}
+
+	for dur, expected := range tests {
+		rounded := roundDuration(dur)
+		if rounded != expected {
+			t.Errorf("Expected %v, Got %v", expected, rounded)
+		}
+	}
+}
+
+func TestReadRequestBody(t *testing.T) {
+	payload := []byte(`{ "foo": "bar" }`)
+	var readSize int64 = 5
+	r, err := http.NewRequest("POST", "/", bytes.NewReader(payload))
+	if err != nil {
+		t.Error(err)
+	}
+	defer r.Body.Close()
+
+	logBody, err := readRequestBody(r, readSize)
+	if err != nil {
+		t.Error("readRequestBody failed", err)
+	} else if !bytes.EqualFold(payload[0:readSize], logBody) {
+		t.Error("Expected log comparison failed")
+	}
+
+	// Ensure the Request body is the same as the original.
+	reqBody, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		t.Error("Unable to read request body", err)
+	} else if !bytes.EqualFold(payload, reqBody) {
+		t.Error("Expected request body comparison failed")
 	}
 }

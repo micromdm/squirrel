@@ -12,7 +12,6 @@ import (
 
 // To attempts rewrite. It attempts to rewrite to first valid path
 // or the last path if none of the paths are valid.
-// Returns true if rewrite is successful and false otherwise.
 func To(fs http.FileSystem, r *http.Request, to string, replacer httpserver.Replacer) Result {
 	tos := strings.Fields(to)
 
@@ -29,12 +28,12 @@ func To(fs http.FileSystem, r *http.Request, to string, replacer httpserver.Repl
 		}
 
 		// add trailing slash for directories, if present
-		if strings.HasSuffix(v, "/") && !strings.HasSuffix(t, "/") {
+		if strings.HasSuffix(tparts[0], "/") && !strings.HasSuffix(t, "/") {
 			t += "/"
 		}
 
 		// validate file
-		if isValidFile(fs, t) {
+		if validFile(fs, t) {
 			break
 		}
 	}
@@ -66,9 +65,9 @@ func To(fs http.FileSystem, r *http.Request, to string, replacer httpserver.Repl
 	return RewriteDone
 }
 
-// isValidFile checks if file exists on the filesystem.
+// validFile checks if file exists on the filesystem.
 // if file ends with `/`, it is validated as a directory.
-func isValidFile(fs http.FileSystem, file string) bool {
+func validFile(fs http.FileSystem, file string) bool {
 	if fs == nil {
 		return false
 	}

@@ -46,7 +46,7 @@ func setup(c *caddy.Controller) error {
 
 		// If a HookUrl is set, we switch to event based pulling.
 		// Install the url handler
-		if repo.Hook.Url != "" {
+		if repo.Hook.URL != "" {
 
 			hookRepos = append(hookRepos, repo)
 
@@ -79,7 +79,7 @@ func setup(c *caddy.Controller) error {
 	// return handler
 	if len(hookRepos) > 0 {
 		webhook := &WebHook{Repos: hookRepos}
-		httpserver.GetConfig(c.Key).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
+		httpserver.GetConfig(c).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
 			webhook.Next = next
 			return webhook
 		})
@@ -91,7 +91,7 @@ func setup(c *caddy.Controller) error {
 func parse(c *caddy.Controller) (Git, error) {
 	var git Git
 
-	config := httpserver.GetConfig(c.Key)
+	config := httpserver.GetConfig(c)
 	for c.Next() {
 		repo := &Repo{Branch: "master", Interval: DefaultInterval, Path: config.Root}
 
@@ -147,7 +147,7 @@ func parse(c *caddy.Controller) (Git, error) {
 				if !c.NextArg() {
 					return nil, c.ArgErr()
 				}
-				repo.Hook.Url = c.Val()
+				repo.Hook.URL = c.Val()
 
 				// optional secret for validation
 				if c.NextArg() {

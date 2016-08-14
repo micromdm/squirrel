@@ -1,42 +1,53 @@
 package httpserver
 
 import (
+	"fmt"
 	"net"
 	"net/http"
 
+	"github.com/mholt/caddy"
 	"github.com/mholt/caddy/caddytls"
 )
 
-func activateHTTPS() error {
-	// TODO: Is this loop a bug? Should we scope this method to just a single context? (restarts...?)
-	for _, ctx := range contexts {
-		// pre-screen each config and earmark the ones that qualify for managed TLS
-		markQualifiedForAutoHTTPS(ctx.siteConfigs)
+func activateHTTPS(cctx caddy.Context) error {
+	operatorPresent := !caddy.Started()
 
-		// place certificates and keys on disk
-		for _, c := range ctx.siteConfigs {
-			err := c.TLS.ObtainCert(true)
-			if err != nil {
-				return err
-			}
-		}
+	if !caddy.Quiet && operatorPresent {
+		fmt.Print("Activating privacy features...")
+	}
 
-		// update TLS configurations
-		err := enableAutoHTTPS(ctx.siteConfigs, true)
+	ctx := cctx.(*httpContext)
+
+	// pre-screen each config and earmark the ones that qualify for managed TLS
+	markQualifiedForAutoHTTPS(ctx.siteConfigs)
+
+	// place certificates and keys on disk
+	for _, c := range ctx.siteConfigs {
+		err := c.TLS.ObtainCert(operatorPresent)
 		if err != nil {
 			return err
 		}
-
-		// set up redirects
-		ctx.siteConfigs = makePlaintextRedirects(ctx.siteConfigs)
 	}
+
+	// update TLS configurations
+	err := enableAutoHTTPS(ctx.siteConfigs, true)
+	if err != nil {
+		return err
+	}
+
+	// set up redirects
+	ctx.siteConfigs = makePlaintextRedirects(ctx.siteConfigs)
 
 	// renew all relevant certificates that need renewal. this is important
 	// to do right away so we guarantee that renewals aren't missed, and
 	// also the user can respond to any potential errors that occur.
-	err := caddytls.RenewManagedCertificates(true)
+	err = caddytls.RenewManagedCertificates(true)
 	if err != nil {
 		return err
+	}
+
+	if !caddy.Quiet && operatorPresent {
+		fmt.Println(" done.")
 	}
 
 	return nil

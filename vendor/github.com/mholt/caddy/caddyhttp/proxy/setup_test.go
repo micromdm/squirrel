@@ -111,15 +111,36 @@ func TestSetup(t *testing.T) {
 				"http://localhost:8085": {},
 			},
 		},
+		// test #10 test hyphen without port range
+		{
+			"proxy / http://localhost:8001/a--b",
+			false,
+			map[string]struct{}{
+				"http://localhost:8001/a--b": {},
+			},
+		},
+		// test #11 test hyphen with port range
+		{
+			"proxy / http://localhost:8001-8005/a--b",
+			false,
+			map[string]struct{}{
+				"http://localhost:8001/a--b": {},
+				"http://localhost:8002/a--b": {},
+				"http://localhost:8003/a--b": {},
+				"http://localhost:8004/a--b": {},
+				"http://localhost:8005/a--b": {},
+			},
+		},
 	} {
-		err := setup(caddy.NewTestController(test.input))
+		c := caddy.NewTestController("http", test.input)
+		err := setup(c)
 		if err != nil && !test.shouldErr {
 			t.Errorf("Test case #%d received an error of %v", i, err)
 		} else if test.shouldErr {
 			continue
 		}
 
-		mids := httpserver.GetConfig("").Middleware()
+		mids := httpserver.GetConfig(c).Middleware()
 		mid := mids[len(mids)-1]
 
 		upstreams := mid(nil).(Proxy).Upstreams

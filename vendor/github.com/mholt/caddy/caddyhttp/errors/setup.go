@@ -49,11 +49,10 @@ func setup(c *caddy.Controller) error {
 			}
 			if handler.LogRoller != nil {
 				file.Close()
-
 				handler.LogRoller.Filename = handler.LogFile
-
 				writer = handler.LogRoller.GetLogWriter()
 			} else {
+				handler.file = file
 				writer = file
 			}
 		}
@@ -62,7 +61,15 @@ func setup(c *caddy.Controller) error {
 		return nil
 	})
 
-	httpserver.GetConfig(c.Key).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
+	// When server stops, close any open log file
+	c.OnShutdown(func() error {
+		if handler.file != nil {
+			handler.file.Close()
+		}
+		return nil
+	})
+
+	httpserver.GetConfig(c).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
 		handler.Next = next
 		return handler
 	})
@@ -76,7 +83,7 @@ func errorsParse(c *caddy.Controller) (*ErrorHandler, error) {
 	// same instance of the handler, not a copy.
 	handler := &ErrorHandler{ErrorPages: make(map[int]string)}
 
-	cfg := httpserver.GetConfig(c.Key)
+	cfg := httpserver.GetConfig(c)
 
 	optionalBlock := func() (bool, error) {
 		var hadBlock bool
@@ -115,11 +122,23 @@ func errorsParse(c *caddy.Controller) (*ErrorHandler, error) {
 				}
 				f.Close()
 
-				whatInt, err := strconv.Atoi(what)
-				if err != nil {
-					return hadBlock, c.Err("Expecting a numeric status code, got '" + what + "'")
+				if what == "*" {
+					if handler.GenericErrorPage != "" {
+						return hadBlock, c.Errf("Duplicate status code entry: %s", what)
+					}
+					handler.GenericErrorPage = where
+				} else {
+					whatInt, err := strconv.Atoi(what)
+					if err != nil {
+						return hadBlock, c.Err("Expecting a numeric status code or '*', got '" + what + "'")
+					}
+
+					if _, exists := handler.ErrorPages[whatInt]; exists {
+						return hadBlock, c.Errf("Duplicate status code entry: %s", what)
+					}
+
+					handler.ErrorPages[whatInt] = where
 				}
-				handler.ErrorPages[whatInt] = where
 			}
 		}
 		return hadBlock, nil

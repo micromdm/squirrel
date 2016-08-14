@@ -27,7 +27,7 @@ func setupTLS(c *caddy.Controller) error {
 	if !ok {
 		return fmt.Errorf("no caddytls.ConfigGetter for %s server type; must call RegisterConfigGetter", c.ServerType())
 	}
-	config := configGetter(c.Key)
+	config := configGetter(c)
 	if config == nil {
 		return fmt.Errorf("no caddytls.Config to set up for %s", c.Key)
 	}
@@ -75,19 +75,28 @@ func setupTLS(c *caddy.Controller) error {
 				config.KeyType = value
 			case "protocols":
 				args := c.RemainingArgs()
-				if len(args) != 2 {
-					return c.ArgErr()
+				if len(args) == 1 {
+					value, ok := supportedProtocols[strings.ToLower(args[0])]
+					if !ok {
+						return c.Errf("Wrong protocol name or protocol not supported: '%s'", args[0])
+					}
+
+					config.ProtocolMinVersion, config.ProtocolMaxVersion = value, value
+				} else {
+					value, ok := supportedProtocols[strings.ToLower(args[0])]
+					if !ok {
+						return c.Errf("Wrong protocol name or protocol not supported: '%s'", args[0])
+					}
+					config.ProtocolMinVersion = value
+					value, ok = supportedProtocols[strings.ToLower(args[1])]
+					if !ok {
+						return c.Errf("Wrong protocol name or protocol not supported: '%s'", args[1])
+					}
+					config.ProtocolMaxVersion = value
+					if config.ProtocolMinVersion > config.ProtocolMaxVersion {
+						return c.Errf("Minimum protocol version cannot be higher than maximum (reverse the order)")
+					}
 				}
-				value, ok := supportedProtocols[strings.ToLower(args[0])]
-				if !ok {
-					return c.Errf("Wrong protocol name or protocol not supported: '%s'", args[0])
-				}
-				config.ProtocolMinVersion = value
-				value, ok = supportedProtocols[strings.ToLower(args[1])]
-				if !ok {
-					return c.Errf("Wrong protocol name or protocol not supported: '%s'", args[1])
-				}
-				config.ProtocolMaxVersion = value
 			case "ciphers":
 				for c.NextArg() {
 					value, ok := supportedCiphersMap[strings.ToUpper(c.Val())]
@@ -153,9 +162,7 @@ func setupTLS(c *caddy.Controller) error {
 			if err != nil || maxCertsNum < 1 {
 				return c.Err("max_certs must be a positive integer")
 			}
-			if onDemandMaxIssue == 0 || int32(maxCertsNum) < onDemandMaxIssue { // keep the minimum; TODO: We have to do this because it is global; should be per-server or per-vhost...
-				onDemandMaxIssue = int32(maxCertsNum)
-			}
+			config.OnDemandState.MaxObtain = int32(maxCertsNum)
 		}
 
 		// don't try to load certificates unless we're supposed to

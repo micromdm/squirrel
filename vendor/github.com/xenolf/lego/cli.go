@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/tabwriter"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/xenolf/lego/acme"
 )
 
@@ -158,6 +158,10 @@ func main() {
 			Name:  "dns-timeout",
 			Usage: "Set the DNS timeout value to a specific value in seconds. The default is 10 seconds.",
 		},
+		cli.BoolFlag{
+			Name:  "pem",
+			Usage: "Generate a .pem file by concatanating the .key and .crt files together.",
+		},
 	}
 
 	err = app.Run(os.Args)
@@ -184,6 +188,7 @@ Here is an example bash command using the CloudFlare DNS provider:
 	fmt.Fprintln(w, "\tcloudflare:\tCLOUDFLARE_EMAIL, CLOUDFLARE_API_KEY")
 	fmt.Fprintln(w, "\tdigitalocean:\tDO_AUTH_TOKEN")
 	fmt.Fprintln(w, "\tdnsimple:\tDNSIMPLE_EMAIL, DNSIMPLE_API_KEY")
+	fmt.Fprintln(w, "\tdnsmadeeasy:\tDNSMADEEASY_API_KEY, DNSMADEEASY_API_SECRET")
 	fmt.Fprintln(w, "\tgandi:\tGANDI_API_KEY")
 	fmt.Fprintln(w, "\tgcloud:\tGCE_PROJECT")
 	fmt.Fprintln(w, "\tmanual:\tnone")
@@ -192,6 +197,7 @@ Here is an example bash command using the CloudFlare DNS provider:
 	fmt.Fprintln(w, "\troute53:\tAWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION")
 	fmt.Fprintln(w, "\tdyn:\tDYN_CUSTOMER_NAME, DYN_USER_NAME, DYN_PASSWORD")
 	fmt.Fprintln(w, "\tvultr:\tVULTR_API_KEY")
+	fmt.Fprintln(w, "\tovh:\tOVH_ENDPOINT, OVH_APPLICATION_KEY, OVH_APPLICATION_SECRET, OVH_CONSUMER_KEY")
 	w.Flush()
 
 	fmt.Println(`

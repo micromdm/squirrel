@@ -71,6 +71,7 @@ func NewServer(addr string, group []*SiteConfig) (*Server, error) {
 	// Enable QUIC if desired
 	if QUIC {
 		s.quicServer = &h2quic.Server{Server: s.Server}
+		s.Server.Handler = s.wrapWithSvcHeaders(s.Server.Handler)
 	}
 
 	// We have to bound our wg with one increment
@@ -91,6 +92,10 @@ func NewServer(addr string, group []*SiteConfig) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Since Go 1.7 HTTP/2 is enabled only if TLSConfig.NextProtos includes the string "h2".
+	if HTTP2 && s.Server.TLSConfig != nil && len(s.Server.TLSConfig.NextProtos) == 0 {
+		s.Server.TLSConfig.NextProtos = []string{"h2"}
+	}
 
 	// Compile custom middleware for every site (enables virtual hosting)
 	for _, site := range group {
@@ -103,6 +108,13 @@ func NewServer(addr string, group []*SiteConfig) (*Server, error) {
 	}
 
 	return s, nil
+}
+
+func (s *Server) wrapWithSvcHeaders(previousHandler http.Handler) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.quicServer.SetQuicHeaders(w.Header())
+		previousHandler.ServeHTTP(w, r)
+	}
 }
 
 // Listen creates an active listener for s that can be
@@ -137,6 +149,9 @@ func (s *Server) Listen() (net.Listener, error) {
 	// implementation for graceful restarts.
 	return ln.(*net.TCPListener), nil
 }
+
+// ListenPacket is a noop to implement the Server interface.
+func (s *Server) ListenPacket() (net.PacketConn, error) { return nil, nil }
 
 // Serve serves requests on ln. It blocks until ln is closed.
 func (s *Server) Serve(ln net.Listener) error {
@@ -177,6 +192,9 @@ func (s *Server) Serve(ln net.Listener) error {
 	}
 	return err
 }
+
+// ServePacket is a noop to implement the Server interface.
+func (s *Server) ServePacket(pc net.PacketConn) error { return nil }
 
 // ServeHTTP is the entry point of all HTTP requests.
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {

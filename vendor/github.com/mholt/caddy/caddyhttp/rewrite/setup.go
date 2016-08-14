@@ -23,7 +23,7 @@ func setup(c *caddy.Controller) error {
 		return err
 	}
 
-	cfg := httpserver.GetConfig(c.Key)
+	cfg := httpserver.GetConfig(c)
 
 	cfg.AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
 		return Rewrite{
@@ -36,9 +36,8 @@ func setup(c *caddy.Controller) error {
 	return nil
 }
 
-func rewriteParse(c *caddy.Controller) ([]Rule, error) {
-	var simpleRules []Rule
-	var regexpRules []Rule
+func rewriteParse(c *caddy.Controller) ([]httpserver.HandlerConfig, error) {
+	var rules []httpserver.HandlerConfig
 
 	for c.Next() {
 		var rule Rule
@@ -50,14 +49,23 @@ func rewriteParse(c *caddy.Controller) ([]Rule, error) {
 
 		args := c.RemainingArgs()
 
-		var ifs []If
+		var matcher httpserver.RequestMatcher
 
 		switch len(args) {
 		case 1:
 			base = args[0]
 			fallthrough
 		case 0:
+			// Integrate request matcher for 'if' conditions.
+			matcher, err = httpserver.SetupIfMatcher(c)
+			if err != nil {
+				return nil, err
+			}
+
 			for c.NextBlock() {
+				if httpserver.IfMatcherKeyword(c) {
+					continue
+				}
 				switch c.Val() {
 				case "r", "regexp":
 					if !c.NextArg() {
@@ -76,16 +84,6 @@ func rewriteParse(c *caddy.Controller) ([]Rule, error) {
 						return nil, c.ArgErr()
 					}
 					ext = args1
-				case "if":
-					args1 := c.RemainingArgs()
-					if len(args1) != 3 {
-						return nil, c.ArgErr()
-					}
-					ifCond, err := NewIf(args1[0], args1[1], args1[2])
-					if err != nil {
-						return nil, err
-					}
-					ifs = append(ifs, ifCond)
 				case "status":
 					if !c.NextArg() {
 						return nil, c.ArgErr()
@@ -102,19 +100,18 @@ func rewriteParse(c *caddy.Controller) ([]Rule, error) {
 			if to == "" && status == 0 {
 				return nil, c.ArgErr()
 			}
-			if rule, err = NewComplexRule(base, pattern, to, status, ext, ifs); err != nil {
+			if rule, err = NewComplexRule(base, pattern, to, status, ext, matcher); err != nil {
 				return nil, err
 			}
-			regexpRules = append(regexpRules, rule)
+			rules = append(rules, rule)
 
 		// the only unhandled case is 2 and above
 		default:
 			rule = NewSimpleRule(args[0], strings.Join(args[1:], " "))
-			simpleRules = append(simpleRules, rule)
+			rules = append(rules, rule)
 		}
 
 	}
 
-	// put simple rules in front to avoid regexp computation for them
-	return append(simpleRules, regexpRules...), nil
+	return rules, nil
 }

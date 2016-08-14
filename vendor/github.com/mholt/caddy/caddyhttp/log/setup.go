@@ -43,6 +43,7 @@ func setup(c *caddy.Controller) error {
 					rules[i].Roller.Filename = rules[i].OutputFile
 					writer = rules[i].Roller.GetLogWriter()
 				} else {
+					rules[i].file = file
 					writer = file
 				}
 			}
@@ -53,7 +54,17 @@ func setup(c *caddy.Controller) error {
 		return nil
 	})
 
-	httpserver.GetConfig(c.Key).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
+	// When server stops, close any open log files
+	c.OnShutdown(func() error {
+		for _, rule := range rules {
+			if rule.file != nil {
+				rule.file.Close()
+			}
+		}
+		return nil
+	})
+
+	httpserver.GetConfig(c).AddMiddleware(func(next httpserver.Handler) httpserver.Handler {
 		return Logger{Next: next, Rules: rules, ErrorFunc: httpserver.DefaultErrorFunc}
 	})
 

@@ -13,7 +13,7 @@ import (
 func TestRewrite(t *testing.T) {
 	rw := Rewrite{
 		Next: httpserver.HandlerFunc(urlPrinter),
-		Rules: []Rule{
+		Rules: []httpserver.HandlerConfig{
 			NewSimpleRule("/from", "/to"),
 			NewSimpleRule("/a", "/b"),
 			NewSimpleRule("/b", "/b{uri}"),
@@ -42,7 +42,7 @@ func TestRewrite(t *testing.T) {
 		if s := strings.Split(regexpRule[3], "|"); len(s) > 1 {
 			ext = s[:len(s)-1]
 		}
-		rule, err := NewComplexRule(regexpRule[0], regexpRule[1], regexpRule[2], 0, ext, nil)
+		rule, err := NewComplexRule(regexpRule[0], regexpRule[1], regexpRule[2], 0, ext, httpserver.IfMatcher{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,7 +85,7 @@ func TestRewrite(t *testing.T) {
 		{"/abcde/abcde.html", "/a"},
 		{"/abcde/abcde.html#1234", "/a#1234"},
 		{"/ab/ab.jpg", "/ajpg"},
-		{"/reggrp/ad/12", "/a12"},
+		{"/reggrp/ad/12", "/a12/"},
 		{"/reggrp/ad/124a", "/a124/a"},
 		{"/reggrp/ad/124abc", "/a124/abc"},
 		{"/reg2grp/ad/124abc", "/ad/124abc"},
@@ -127,11 +127,11 @@ func TestRewrite(t *testing.T) {
 
 	for i, s := range statusTests {
 		urlPath := fmt.Sprintf("/status%d", i)
-		rule, err := NewComplexRule(s.base, s.regexp, s.to, s.status, nil, nil)
+		rule, err := NewComplexRule(s.base, s.regexp, s.to, s.status, nil, httpserver.IfMatcher{})
 		if err != nil {
 			t.Fatalf("Test %d: No error expected for rule but found %v", i, err)
 		}
-		rw.Rules = []Rule{rule}
+		rw.Rules = []httpserver.HandlerConfig{rule}
 		req, err := http.NewRequest("GET", urlPath, nil)
 		if err != nil {
 			t.Fatalf("Test %d: Could not create HTTP request: %v", i, err)

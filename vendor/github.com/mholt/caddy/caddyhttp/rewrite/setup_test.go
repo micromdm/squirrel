@@ -10,11 +10,12 @@ import (
 )
 
 func TestSetup(t *testing.T) {
-	err := setup(caddy.NewTestController(`rewrite /from /to`))
+	c := caddy.NewTestController("http", `rewrite /from /to`)
+	err := setup(c)
 	if err != nil {
 		t.Errorf("Expected no errors, but got: %v", err)
 	}
-	mids := httpserver.GetConfig("").Middleware()
+	mids := httpserver.GetConfig(c).Middleware()
 	if len(mids) == 0 {
 		t.Fatal("Expected middleware, had 0 instead")
 	}
@@ -56,7 +57,7 @@ func TestRewriteParse(t *testing.T) {
 	}
 
 	for i, test := range simpleTests {
-		actual, err := rewriteParse(caddy.NewTestController(test.input))
+		actual, err := rewriteParse(caddy.NewTestController("http", test.input))
 
 		if err == nil && test.shouldErr {
 			t.Errorf("Test %d didn't error, but it should have", i)
@@ -131,12 +132,6 @@ func TestRewriteParse(t *testing.T) {
 			&ComplexRule{},
 		}},
 		{`rewrite {
-			to	/to
-			if {path} is a
-		 }`, false, []Rule{
-			&ComplexRule{Base: "/", To: "/to", Ifs: []If{{A: "{path}", Operator: "is", B: "a"}}},
-		}},
-		{`rewrite {
 			status 500
 		 }`, true, []Rule{
 			&ComplexRule{},
@@ -184,10 +179,16 @@ func TestRewriteParse(t *testing.T) {
 		 }`, true, []Rule{
 			&ComplexRule{},
 		}},
+		{`rewrite {
+			if {path} match /
+			to		/to
+		 }`, false, []Rule{
+			&ComplexRule{Base: "/", To: "/to"},
+		}},
 	}
 
 	for i, test := range regexpTests {
-		actual, err := rewriteParse(caddy.NewTestController(test.input))
+		actual, err := rewriteParse(caddy.NewTestController("http", test.input))
 
 		if err == nil && test.shouldErr {
 			t.Errorf("Test %d didn't error, but it should have", i)
@@ -226,11 +227,6 @@ func TestRewriteParse(t *testing.T) {
 					t.Errorf("Test %d, rule %d: Expected Pattern=%s, got %s",
 						i, j, expectedRule.String(), actualRule.String())
 				}
-			}
-
-			if fmt.Sprint(actualRule.Ifs) != fmt.Sprint(expectedRule.Ifs) {
-				t.Errorf("Test %d, rule %d: Expected Pattern=%s, got %s",
-					i, j, fmt.Sprint(expectedRule.Ifs), fmt.Sprint(actualRule.Ifs))
 			}
 
 		}

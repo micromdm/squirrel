@@ -26,6 +26,7 @@ func TestInit(t *testing.T) {
 }
 
 func TestHelpers(t *testing.T) {
+	Init()
 	f, err := writeScriptFile([]byte("script"))
 	check(t, err)
 	var b [6]byte
@@ -241,6 +242,38 @@ if [ "$1" = "-i" ]; then
     ssh -i $SSH_KEY \$@" > /tmp/.git_ssh.$$
     chmod +x /tmp/.git_ssh.$$
     export GIT_SSH=/tmp/.git_ssh.$$
+fi
+
+# in case the git command is repeated
+[ "$1" = "git" ] && shift
+
+# Run the git command
+/usr/bin/git "$@"
+
+`
+
+var expectedWrapperScriptAltTmp = `#!/bin/bash
+
+# The MIT License (MIT)
+# Copyright (c) 2013 Alvin Abad
+
+if [ $# -eq 0 ]; then
+    echo "Git wrapper script that can specify an ssh-key file
+Usage:
+    git.sh -i ssh-key-file git-command
+    "
+    exit 1
+fi
+
+# remove temporary file on exit
+trap 'rm -f /home/user/tmp/.git_ssh.$$' 0
+
+if [ "$1" = "-i" ]; then
+    SSH_KEY=$2; shift; shift
+    echo -e "#!/bin/bash \n \
+    ssh -i $SSH_KEY \$@" > /home/user/tmp/.git_ssh.$$
+    chmod +x /home/user/tmp/.git_ssh.$$
+    export GIT_SSH=/home/user/tmp/.git_ssh.$$
 fi
 
 # in case the git command is repeated

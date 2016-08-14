@@ -44,16 +44,11 @@ func init() {
 	})
 	caddy.RegisterCaddyfileLoader("short", caddy.LoaderFunc(shortCaddyfileLoader))
 	caddy.RegisterParsingCallback(serverType, "tls", activateHTTPS)
-	caddytls.RegisterConfigGetter(serverType, func(key string) *caddytls.Config { return GetConfig(key).TLS })
+	caddytls.RegisterConfigGetter(serverType, func(c *caddy.Controller) *caddytls.Config { return GetConfig(c).TLS })
 }
 
-var contexts []*httpContext
-
 func newContext() caddy.Context {
-	context := &httpContext{keysToSiteConfigs: make(map[string]*SiteConfig)}
-	// put the new context at start to allow setup of directives on new instance
-	contexts = append([]*httpContext{context}, contexts...)
-	return context
+	return &httpContext{keysToSiteConfigs: make(map[string]*SiteConfig)}
 }
 
 type httpContext struct {
@@ -65,6 +60,11 @@ type httpContext struct {
 
 	// siteConfigs is the master list of all site configs.
 	siteConfigs []*SiteConfig
+}
+
+func (h *httpContext) saveConfig(key string, cfg *SiteConfig) {
+	h.siteConfigs = append(h.siteConfigs, cfg)
+	h.keysToSiteConfigs[key] = cfg
 }
 
 // InspectServerBlocks make sure that everything checks out before
@@ -82,6 +82,16 @@ func (h *httpContext) InspectServerBlocks(sourceFile string, serverBlocks []cadd
 			if err != nil {
 				return serverBlocks, err
 			}
+
+			// Fill in address components from command line so that middleware
+			// have access to the correct information during setup
+			if addr.Host == "" && Host != DefaultHost {
+				addr.Host = Host
+			}
+			if addr.Port == "" && Port != DefaultPort {
+				addr.Port = Port
+			}
+
 			// Save the config to our master list, and key it for lookups
 			cfg := &SiteConfig{
 				Addr:        addr,
@@ -89,15 +99,14 @@ func (h *httpContext) InspectServerBlocks(sourceFile string, serverBlocks []cadd
 				TLS:         &caddytls.Config{Hostname: addr.Host},
 				HiddenFiles: []string{sourceFile},
 			}
-			h.siteConfigs = append(h.siteConfigs, cfg)
-			h.keysToSiteConfigs[key] = cfg
+			h.saveConfig(key, cfg)
 		}
 	}
 
 	// For sites that have gzip (which gets chained in
 	// before the error handler) we should ensure that the
 	// errors directive also appears so error pages aren't
-	// written after the gzip writer is closed.
+	// written after the gzip writer is closed. See #616.
 	for _, sb := range serverBlocks {
 		_, hasGzip := sb.Tokens["gzip"]
 		_, hasErrors := sb.Tokens["errors"]
@@ -129,6 +138,12 @@ func (h *httpContext) MakeServers() ([]caddy.Server, error) {
 			// is incorrect for this site.
 			cfg.Addr.Scheme = "https"
 		}
+		if cfg.Addr.Port == "" && ((!cfg.TLS.Manual && !cfg.TLS.SelfSigned) || cfg.TLS.OnDemand) {
+			// this is vital, otherwise the function call below that
+			// sets the listener address will use the default port
+			// instead of 443 because it doesn't know about TLS.
+			cfg.Addr.Port = "443"
+		}
 	}
 
 	// we must map (group) each config to a bind address
@@ -150,27 +165,19 @@ func (h *httpContext) MakeServers() ([]caddy.Server, error) {
 	return servers, nil
 }
 
-// GetConfig gets a SiteConfig that is keyed by addrKey.
-// It creates an empty one in the latest context if
-// the key does not exist in any context, so it
-// will never return nil. If no contexts exist (which
-// should never happen except in tests), it creates a
-// new context in which to put it.
-func GetConfig(addrKey string) *SiteConfig {
-	for _, context := range contexts {
-		if cfg, ok := context.keysToSiteConfigs[addrKey]; ok {
-			return cfg
-		}
+// GetConfig gets the SiteConfig that corresponds to c.
+// If none exist (should only happen in tests), then a
+// new, empty one will be created.
+func GetConfig(c *caddy.Controller) *SiteConfig {
+	ctx := c.Context().(*httpContext)
+	if cfg, ok := ctx.keysToSiteConfigs[c.Key]; ok {
+		return cfg
 	}
-	if len(contexts) == 0 {
-		// this shouldn't happen except in tests
-		newContext()
-	}
-	cfg := &SiteConfig{Root: Root, TLS: new(caddytls.Config)}
-	defaultCtx := contexts[len(contexts)-1]
-	defaultCtx.siteConfigs = append(defaultCtx.siteConfigs, cfg)
-	defaultCtx.keysToSiteConfigs[addrKey] = cfg
-	return cfg
+	// we should only get here during tests because directive
+	// actions typically skip the server blocks where we make
+	// the configs
+	ctx.saveConfig(c.Key, &SiteConfig{Root: Root, TLS: new(caddytls.Config)})
+	return GetConfig(c)
 }
 
 // shortCaddyfileLoader loads a Caddyfile if positional arguments are
@@ -199,11 +206,11 @@ func groupSiteConfigsByListenAddr(configs []*SiteConfig) (map[string][]*SiteConf
 	groups := make(map[string][]*SiteConfig)
 
 	for _, conf := range configs {
-		if caddy.IsLoopback(conf.Addr.Host) && conf.ListenHost == "" {
-			// special case: one would not expect a site served
-			// at loopback to be connected to from the outside.
-			conf.ListenHost = conf.Addr.Host
-		}
+		// We would add a special case here so that localhost addresses
+		// bind to 127.0.0.1 if conf.ListenHost is not already set, which
+		// would prevent outsiders from even connecting; but that was problematic:
+		// https://forum.caddyserver.com/t/wildcard-virtual-domains-with-wildcard-roots/221/5?u=matt
+
 		if conf.Addr.Port == "" {
 			conf.Addr.Port = Port
 		}
@@ -218,14 +225,11 @@ func groupSiteConfigsByListenAddr(configs []*SiteConfig) (map[string][]*SiteConf
 	return groups, nil
 }
 
-// AddMiddleware adds a middleware to a site's middleware stack.
-func (sc *SiteConfig) AddMiddleware(m Middleware) {
-	sc.middleware = append(sc.middleware, m)
-}
-
 // Address represents a site address. It contains
 // the original input value, and the component
-// parts of an address.
+// parts of an address. The component parts may be
+// updated to the correct values as setup proceeds,
+// but the original value should never be changed.
 type Address struct {
 	Original, Scheme, Host, Port, Path string
 }
@@ -269,12 +273,12 @@ func (a Address) VHost() string {
 }
 
 // standardizeAddress parses an address string into a structured format with separate
-// scheme, host, and port portions, as well as the original input string.
+// scheme, host, port, and path portions, as well as the original input string.
 func standardizeAddress(str string) (Address, error) {
 	input := str
 
 	// Split input into components (prepend with // to assert host by default)
-	if !strings.Contains(str, "//") {
+	if !strings.Contains(str, "//") && !strings.HasPrefix(str, "/") {
 		str = "//" + str
 	}
 	u, err := url.Parse(str)
@@ -338,17 +342,19 @@ var directives = []string{
 	"git",    // github.com/abiosoft/caddy-git
 
 	// directives that add middleware to the stack
+	"locale", // github.com/simia-tech/caddy-locale
 	"log",
+	"rewrite",
+	"ext",
 	"gzip",
 	"errors",
-	"minify",   // github.com/hacdias/caddy-minify
-	"ipfilter", // github.com/pyed/ipfilter
-	"search",   // github.com/pedronasser/caddy-search
+	"minify",    // github.com/hacdias/caddy-minify
+	"ipfilter",  // github.com/pyed/ipfilter
+	"ratelimit", // github.com/xuqingfeng/caddy-rate-limit
+	"search",    // github.com/pedronasser/caddy-search
 	"header",
-	"cors", // github.com/captncraig/cors/caddy
-	"rewrite",
 	"redir",
-	"ext",
+	"cors", // github.com/captncraig/cors/caddy
 	"mime",
 	"basicauth",
 	"jwt",    // github.com/BTBurke/caddy-jwt
@@ -363,9 +369,10 @@ var directives = []string{
 	"markdown",
 	"templates",
 	"browse",
-	"hugo",       // github.com/hacdias/caddy-hugo
-	"mailout",    // github.com/SchumacherFM/mailout
-	"prometheus", // github.com/miekg/caddy-prometheus
+	"filemanager", // github.com/hacdias/caddy-filemanager
+	"hugo",        // github.com/hacdias/caddy-hugo
+	"mailout",     // github.com/SchumacherFM/mailout
+	"prometheus",  // github.com/miekg/caddy-prometheus
 }
 
 const (

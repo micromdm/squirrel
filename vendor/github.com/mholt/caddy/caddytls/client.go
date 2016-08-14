@@ -4,11 +4,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"net"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 	"time"
@@ -30,7 +28,7 @@ type ACMEClient struct {
 // newACMEClient creates a new ACMEClient given an email and whether
 // prompting the user is allowed. It's a variable so we can mock in tests.
 var newACMEClient = func(config *Config, allowPrompts bool) (*ACMEClient, error) {
-	storage, err := StorageFor(config.CAUrl)
+	storage, err := config.StorageFor(config.CAUrl)
 	if err != nil {
 		return nil, err
 	}
@@ -146,9 +144,11 @@ var newACMEClient = func(config *Config, allowPrompts bool) (*ACMEClient, error)
 func (c *ACMEClient) Obtain(names []string) error {
 Attempts:
 	for attempts := 0; attempts < 2; attempts++ {
+		namesObtaining.Add(names)
 		acmeMu.Lock()
 		certificate, failures := c.ObtainCertificate(names, true, nil)
 		acmeMu.Unlock()
+		namesObtaining.Remove(names)
 		if len(failures) > 0 {
 			// Error - try to fix it or report it to the user and abort
 			var errMsg string             // we'll combine all the failures into a single error message
@@ -180,7 +180,7 @@ Attempts:
 		}
 
 		// Success - immediately save the certificate resource
-		storage, err := StorageFor(c.config.CAUrl)
+		storage, err := c.config.StorageFor(c.config.CAUrl)
 		if err != nil {
 			return err
 		}
@@ -204,36 +204,43 @@ Attempts:
 // Anyway, this function is safe for concurrent use.
 func (c *ACMEClient) Renew(name string) error {
 	// Get access to ACME storage
-	storage, err := StorageFor(c.config.CAUrl)
+	storage, err := c.config.StorageFor(c.config.CAUrl)
 	if err != nil {
 		return err
 	}
 
+	// We must lock the renewal with the storage engine
+	if lockObtained, err := storage.LockRegister(name); err != nil {
+		return err
+	} else if !lockObtained {
+		log.Printf("[INFO] Certificate for %v is already being renewed elsewhere", name)
+		return nil
+	}
+	defer func() {
+		if err := storage.UnlockRegister(name); err != nil {
+			log.Printf("[ERROR] Unable to unlock renewal lock for %v: %v", name, err)
+		}
+	}()
+
 	// Prepare for renewal (load PEM cert, key, and meta)
-	certBytes, err := ioutil.ReadFile(storage.SiteCertFile(name))
-	if err != nil {
-		return err
-	}
-	keyBytes, err := ioutil.ReadFile(storage.SiteKeyFile(name))
-	if err != nil {
-		return err
-	}
-	metaBytes, err := ioutil.ReadFile(storage.SiteMetaFile(name))
+	siteData, err := storage.LoadSite(name)
 	if err != nil {
 		return err
 	}
 	var certMeta acme.CertificateResource
-	err = json.Unmarshal(metaBytes, &certMeta)
-	certMeta.Certificate = certBytes
-	certMeta.PrivateKey = keyBytes
+	err = json.Unmarshal(siteData.Meta, &certMeta)
+	certMeta.Certificate = siteData.Cert
+	certMeta.PrivateKey = siteData.Key
 
 	// Perform renewal and retry if necessary, but not too many times.
 	var newCertMeta acme.CertificateResource
 	var success bool
 	for attempts := 0; attempts < 2; attempts++ {
+		namesObtaining.Add([]string{name})
 		acmeMu.Lock()
 		newCertMeta, err = c.RenewCertificate(certMeta, true)
 		acmeMu.Unlock()
+		namesObtaining.Remove([]string{name})
 		if err == nil {
 			success = true
 			break
@@ -265,30 +272,73 @@ func (c *ACMEClient) Renew(name string) error {
 // Revoke revokes the certificate for name and deltes
 // it from storage.
 func (c *ACMEClient) Revoke(name string) error {
-	storage, err := StorageFor(c.config.CAUrl)
+	storage, err := c.config.StorageFor(c.config.CAUrl)
 	if err != nil {
 		return err
 	}
 
-	if !existingCertAndKey(storage, name) {
+	if !storage.SiteExists(name) {
 		return errors.New("no certificate and key for " + name)
 	}
 
-	certFile := storage.SiteCertFile(name)
-	certBytes, err := ioutil.ReadFile(certFile)
+	siteData, err := storage.LoadSite(name)
 	if err != nil {
 		return err
 	}
 
-	err = c.Client.RevokeCertificate(certBytes)
+	err = c.Client.RevokeCertificate(siteData.Cert)
 	if err != nil {
 		return err
 	}
 
-	err = os.Remove(certFile)
+	err = storage.DeleteSite(name)
 	if err != nil {
 		return errors.New("certificate revoked, but unable to delete certificate file: " + err.Error())
 	}
 
 	return nil
+}
+
+// namesObtaining is a set of hostnames with thread-safe
+// methods. A name should be in this set only while this
+// package is in the process of obtaining a certificate
+// for the name. ACME challenges that are received for
+// names which are not in this set were not initiated by
+// this package and probably should not be handled by
+// this package.
+var namesObtaining = nameCoordinator{names: make(map[string]struct{})}
+
+type nameCoordinator struct {
+	names map[string]struct{}
+	mu    sync.RWMutex
+}
+
+// Add adds names to c. It is safe for concurrent use.
+func (c *nameCoordinator) Add(names []string) {
+	c.mu.Lock()
+	for _, name := range names {
+		c.names[strings.ToLower(name)] = struct{}{}
+	}
+	c.mu.Unlock()
+}
+
+// Remove removes names from c. It is safe for concurrent use.
+func (c *nameCoordinator) Remove(names []string) {
+	c.mu.Lock()
+	for _, name := range names {
+		delete(c.names, strings.ToLower(name))
+	}
+	c.mu.Unlock()
+}
+
+// Has returns true if c has name. It is safe for concurrent use.
+func (c *nameCoordinator) Has(name string) bool {
+	hostname, _, err := net.SplitHostPort(name)
+	if err != nil {
+		hostname = name
+	}
+	c.mu.RLock()
+	_, ok := c.names[strings.ToLower(hostname)]
+	c.mu.RUnlock()
+	return ok
 }

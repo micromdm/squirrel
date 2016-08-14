@@ -2,24 +2,28 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"path"
 	"strings"
 	"time"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 	"github.com/xenolf/lego/acme"
 	"github.com/xenolf/lego/providers/dns/cloudflare"
 	"github.com/xenolf/lego/providers/dns/digitalocean"
 	"github.com/xenolf/lego/providers/dns/dnsimple"
+	"github.com/xenolf/lego/providers/dns/dnsmadeeasy"
 	"github.com/xenolf/lego/providers/dns/dyn"
 	"github.com/xenolf/lego/providers/dns/gandi"
 	"github.com/xenolf/lego/providers/dns/googlecloud"
 	"github.com/xenolf/lego/providers/dns/namecheap"
+	"github.com/xenolf/lego/providers/dns/ovh"
 	"github.com/xenolf/lego/providers/dns/rfc2136"
 	"github.com/xenolf/lego/providers/dns/route53"
 	"github.com/xenolf/lego/providers/dns/vultr"
@@ -36,7 +40,7 @@ func checkFolder(path string) error {
 func setup(c *cli.Context) (*Configuration, *Account, *acme.Client) {
 
 	if c.GlobalIsSet("http-timeout") {
-		acme.HTTPTimeout = time.Duration(c.GlobalInt("http-timeout")) * time.Second
+		acme.HTTPClient = http.Client{Timeout: time.Duration(c.GlobalInt("http-timeout")) * time.Second}
 	}
 
 	if c.GlobalIsSet("dns-timeout") {
@@ -106,6 +110,8 @@ func setup(c *cli.Context) (*Configuration, *Account, *acme.Client) {
 			provider, err = digitalocean.NewDNSProvider()
 		case "dnsimple":
 			provider, err = dnsimple.NewDNSProvider()
+		case "dnsmadeeasy":
+			provider, err = dnsmadeeasy.NewDNSProvider()
 		case "dyn":
 			provider, err = dyn.NewDNSProvider()
 		case "gandi":
@@ -122,6 +128,8 @@ func setup(c *cli.Context) (*Configuration, *Account, *acme.Client) {
 			provider, err = rfc2136.NewDNSProvider()
 		case "vultr":
 			provider, err = vultr.NewDNSProvider()
+		case "ovh":
+			provider, err = ovh.NewDNSProvider()
 		}
 
 		if err != nil {
@@ -143,6 +151,7 @@ func saveCertRes(certRes acme.CertificateResource, conf *Configuration) {
 	// as web servers would not be able to work with a combined file.
 	certOut := path.Join(conf.CertPath(), certRes.Domain+".crt")
 	privOut := path.Join(conf.CertPath(), certRes.Domain+".key")
+	pemOut := path.Join(conf.CertPath(), certRes.Domain+".pem")
 	metaOut := path.Join(conf.CertPath(), certRes.Domain+".json")
 
 	err := ioutil.WriteFile(certOut, certRes.Certificate, 0600)
@@ -156,6 +165,17 @@ func saveCertRes(certRes acme.CertificateResource, conf *Configuration) {
 		if err != nil {
 			logger().Fatalf("Unable to save PrivateKey for domain %s\n\t%s", certRes.Domain, err.Error())
 		}
+
+		if conf.context.GlobalBool("pem") {
+			err = ioutil.WriteFile(pemOut, bytes.Join([][]byte{certRes.Certificate, certRes.PrivateKey}, nil), 0600)
+			if err != nil {
+				logger().Fatalf("Unable to save Certificate and PrivateKey in .pem for domain %s\n\t%s", certRes.Domain, err.Error())
+			}
+		}
+
+	} else if conf.context.GlobalBool("pem") {
+		// we don't have the private key; can't write the .pem file
+		logger().Fatalf("Unable to save pem without private key for domain %s\n\t%s; are you using a CSR?", certRes.Domain, err.Error())
 	}
 
 	jsonBytes, err := json.MarshalIndent(certRes, "", "\t")

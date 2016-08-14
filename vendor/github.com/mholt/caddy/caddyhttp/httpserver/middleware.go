@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"strings"
 	"time"
 )
 
@@ -45,11 +44,45 @@ type (
 	// ServeHTTP returns a status code and an error. See Handler
 	// documentation for more information.
 	HandlerFunc func(http.ResponseWriter, *http.Request) (int, error)
+
+	// RequestMatcher checks to see if current request should be handled
+	// by underlying handler.
+	RequestMatcher interface {
+		Match(r *http.Request) bool
+	}
+
+	// HandlerConfig is a middleware configuration.
+	// This makes it possible for middlewares to have a common
+	// configuration interface.
+	//
+	// TODO The long term plan is to get all middleware implement this
+	// interface for configurations.
+	HandlerConfig interface {
+		RequestMatcher
+		BasePath() string
+	}
+
+	// ConfigSelector selects a configuration.
+	ConfigSelector []HandlerConfig
 )
 
 // ServeHTTP implements the Handler interface.
 func (f HandlerFunc) ServeHTTP(w http.ResponseWriter, r *http.Request) (int, error) {
 	return f(w, r)
+}
+
+// Select selects a Config.
+// This chooses the config with the longest length.
+func (c ConfigSelector) Select(r *http.Request) (config HandlerConfig) {
+	for i := range c {
+		if !c[i].Match(r) {
+			continue
+		}
+		if config == nil || len(c[i].BasePath()) > len(config.BasePath()) {
+			config = c[i]
+		}
+	}
+	return config
 }
 
 // IndexFile looks for a file in /root/fpath/indexFile for each string
@@ -120,19 +153,22 @@ func initCaseSettings() {
 	}
 }
 
-// Path represents a URI path.
-type Path string
+// MergeRequestMatchers merges multiple RequestMatchers into one.
+// This allows a middleware to use multiple RequestMatchers.
+func MergeRequestMatchers(matchers ...RequestMatcher) RequestMatcher {
+	return requestMatchers(matchers)
+}
 
-// Matches checks to see if other matches p.
-//
-// Path matching will probably not always be a direct
-// comparison; this method assures that paths can be
-// easily and consistently matched.
-func (p Path) Matches(other string) bool {
-	if CaseSensitivePath {
-		return strings.HasPrefix(string(p), other)
+type requestMatchers []RequestMatcher
+
+// Match satisfies RequestMatcher interface.
+func (m requestMatchers) Match(r *http.Request) bool {
+	for _, matcher := range m {
+		if !matcher.Match(r) {
+			return false
+		}
 	}
-	return strings.HasPrefix(strings.ToLower(string(p)), strings.ToLower(other))
+	return true
 }
 
 // currentTime, as it is defined here, returns time.Now().
