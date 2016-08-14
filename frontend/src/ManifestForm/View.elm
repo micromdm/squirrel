@@ -78,12 +78,20 @@ view model =
                 catalogs =
                     List.indexedMap (catalog) model.catalogs
 
+                toAction unchecked =
+                    case unchecked of
+                        True ->
+                            Add
+
+                        False ->
+                            Remove
+
                 managedInstall idx install =
                     Toggles.checkbox Mdl
                         [ 5, idx ]
                         model.mdl
-                        [ Toggles.value True
-                        , Toggles.onClick <| SetManagedInstalls install Remove
+                        [ Toggles.value <| not <| List.member install model.uManagedInstalls
+                        , Toggles.onClick <| SetManagedInstalls install (toAction <| List.member install model.uManagedInstalls)
                         ]
                         [ text install ]
 
@@ -147,6 +155,28 @@ view model =
                         , Button.onClick ClearForm
                         ]
                         [ text "Cancel" ]
+
+                addManagedInstalls =
+                    Button.render Mdl
+                        [ 11 ]
+                        model.mdl
+                        [ Button.raised
+                        , Button.ripple
+                        , Button.colored
+                        , Button.onClick NoOp
+                        ]
+                        [ text "Add" ]
+
+                addManagedUnInstalls =
+                    Button.render Mdl
+                        [ 12 ]
+                        model.mdl
+                        [ Button.raised
+                        , Button.ripple
+                        , Button.colored
+                        , Button.onClick NoOp
+                        ]
+                        [ text "Add" ]
             in
                 div [ class "manifestForm" ]
                     [ div [ class "manifestFormGeneral" ]
@@ -159,9 +189,15 @@ view model =
                         , div [ class "manifestFormButtons" ] [ save, cancel ]
                         ]
                     , div [ class "manifestFormAdvanced" ]
-                        [ text "Managed Installs"
+                        [ div [ class "h3button" ]
+                            [ h3 [] [ text "Managed Installs" ]
+                            , addManagedInstalls
+                            ]
                         , div [] managedInstalls
-                        , text "Managed Uninstalls"
+                        , div [ class "h3button" ]
+                            [ h3 [] [ text "Managed Uninstalls" ]
+                            , addManagedUnInstalls
+                            ]
                         , div [] managedUninstalls
                         , text "Optional Installs"
                         , div [] optionalInstalls

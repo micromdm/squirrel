@@ -58,12 +58,32 @@ update message model =
         SetManagedInstalls install action ->
             let
                 removeItem manifest =
+                    -- unused for now
                     { manifest | managedInstalls = List.filter (\i -> i /= install) manifest.managedInstalls }
 
                 form' =
+                    -- unused for now
                     Maybe.map (removeItem) model.manifestForm
+
+                uncheckedAdd a =
+                    a :: model.uManagedInstalls
+
+                uncheckedRemove a =
+                    List.filter (\i -> i /= install) model.uManagedInstalls
+
+                uManagedInstalls' =
+                    case action of
+                        Add ->
+                            uncheckedRemove install
+
+                        Remove ->
+                            uncheckedAdd install
             in
-                { model | manifestForm = form' } ! []
+                { model
+                    | manifestForm = model.manifestForm
+                    , uManagedInstalls = uManagedInstalls'
+                }
+                    ! []
 
         SetOptionalInstalls install action ->
             let

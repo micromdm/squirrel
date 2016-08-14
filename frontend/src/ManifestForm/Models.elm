@@ -8,6 +8,7 @@ type alias Model =
     { mdl : Material.Model
     , manifestForm : Maybe Manifest
     , catalogs : List String
+    , uManagedInstalls : List String
     }
 
 
@@ -16,4 +17,5 @@ initialModel =
     { mdl = Material.model
     , manifestForm = Nothing
     , catalogs = [ "production", "testing" ]
+    , uManagedInstalls = []
     }
