@@ -4,3 +4,5 @@ Caddyfile
 build/
 elm-stuff/
 elm.js
+vendor/
+repo/

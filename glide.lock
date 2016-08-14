@@ -1,41 +1,26 @@
-hash: 3e067b54b8ebfa8fcf455fcb55a213efe7ec6aff776e87e9c570dc1d257de57e
-updated: 2016-08-14T10:38:06.947322834-04:00
+hash: 303912d421428bef85775e95a3b59c3fa520179f3db32c0349b7d58ad265d809
+updated: 2016-08-14T11:25:55.173860666-04:00
 imports:
-- name: github.com/abiosoft/caddy-git
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
 - name: github.com/go-kit/kit
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
+  version: 6fb874ce59bb45b2f60ee3d289829db02142ecc6
   subpackages:
   - endpoint
   - log
   - transport/http
 - name: github.com/go-logfmt/logfmt
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
+  version: d4327190ff838312623b09bfeb50d7c93c8d9c1d
 - name: github.com/go-stack/stack
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
+  version: 100eb0c0a9c5b306ca2fb4f165df21d80ada4b82
 - name: github.com/gorilla/context
   version: aed02d124ae4a0e94fea4541c8effd05bf0c8296
 - name: github.com/gorilla/mux
   version: 0eeaf8392f5b04950925b8a69fe70f110fa7cbfc
 - name: github.com/groob/plist
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
+  version: e9ca5cd129407b401d850bc3248338865a7490ae
 - name: github.com/kr/logfmt
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
-- name: github.com/mholt/caddy
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
-  subpackages:
-  - caddyhttp
-  - caddytls
-- name: github.com/micromdm/scep
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
-  subpackages:
-  - caddy
-- name: github.com/xenolf/lego
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
-  subpackages:
-  - acme
+  version: b84e30acd515aadc4b783ad4ff83aff3299bdfe0
 - name: golang.org/x/net
-  version: 43593739b329c7fbf82bc7f66e881f3810bf57e0
+  version: 07b51741c1d6423d4a6abab1c49940ec09cb1aaf
   subpackages:
   - context
   - context/ctxhttp
