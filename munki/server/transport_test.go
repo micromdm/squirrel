@@ -16,10 +16,14 @@ func newServer(t *testing.T) (*httptest.Server, munkiserver.Service) {
 	l := log.NewLogfmtLogger(os.Stderr)
 	logger := log.NewContext(l).With("source", "testing")
 	path := "testdata/testrepo"
+	if err := os.MkdirAll(path, 0777); err != nil {
+		t.Fatalf("newServer: failed to setup test repo, err = %v\n", err)
+
+	}
 	repo := &datastore.SimpleRepo{Path: path}
 	svc, err := munkiserver.NewService(repo)
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("newServer: failed to create service: %v\n", err)
 	}
 	handler := munkiserver.ServiceHandler(ctx, svc, logger)
 	server := httptest.NewServer(handler)
