@@ -1,0 +1,14 @@
+[Unit]
+Description=Squirrel Server
+Documentation=https://github.com/micromdm/squirrel
+After=network.target
+
+[Service]
+ExecStart=/usr/bin/squirrel serve \
+    -basic-auth=CHANGEME \
+    -repo=/munki-repo \
+    -tls-domain=munki.corp.micromdm.io 
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

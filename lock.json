@@ -1,0 +1,22 @@
+{
+    "memo": "831dfa862cf1b7c67af220660a9cfe8ce91b36f79932afd76ecf75c3a9bacba7",
+    "projects": [
+        {
+            "name": "golang.org/x/crypto",
+            "branch": "master",
+            "revision": "728b753d0135da6801d45a38e6f43ff55779c5c2",
+            "packages": [
+                "acme/autocert"
+            ]
+        },
+        {
+            "name": "golang.org/x/net",
+            "branch": "master",
+            "revision": "a6577fac2d73be281a500b310739095313165611",
+            "packages": [
+                "context",
+                "context/ctxhttp"
+            ]
+        }
+    ]
+}
