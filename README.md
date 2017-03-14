@@ -6,7 +6,10 @@ See the [legacy](https://github.com/micromdm/squirrel/tree/legacy) branch for th
 * [X] **Automatic HTTPS** - squirrel provides a built in Let's Encrypt Client.
 * [X] Basic Authentication - Basic Auth for munki repo
 
-#Quickstart
+# Install
+Download the [latest release](https://github.com/micromdm/squirrel/releases/latest) from the release page. 
+
+# Quickstart
 
 ```
 squirrel serve -repo=/path/to/munki_repo -tls-domain=munki.corp.example.com --basic-auth=CHANGEME

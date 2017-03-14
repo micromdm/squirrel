@@ -1,3 +1,4 @@
+.DS_Store
 cmd/squirrel/squirrel
 cmd/caddy-squirrel/squirrel
 Caddyfile
