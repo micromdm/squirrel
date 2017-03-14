@@ -10,6 +10,7 @@ import (
 func Main() {
 	if len(os.Args) < 2 {
 		printHelp()
+		return
 	}
 	switch os.Args[1] {
 	case "serve":
