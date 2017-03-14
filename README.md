@@ -1,3 +1,6 @@
+<p align="center">
+<img src="squirrel.png" alt="squirrel"/><br/>
+</p>
 Squirrel is a Simple HTTPs server for munki.
 See the [legacy](https://github.com/micromdm/squirrel/tree/legacy) branch for the API implementation. I plan on adding it back with Munki v3 support.
 
@@ -36,3 +39,5 @@ For help with systemd see the example/systemd folder.
 
 For help enrolling macOS hosts, check out the example/profile folder.
 
+---
+squirrel icon by [Agne Alesiute](https://thenounproject.com/search/?q=squirrel&i=190468) from the [Noun Project](https://thenounproject.com/).
