@@ -10,6 +10,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/micromdm/squirrel/munki/server"
+
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -33,6 +35,7 @@ func serve(cmd *flag.FlagSet) int {
 	cmd.Parse(os.Args[2:])
 	mux := http.NewServeMux()
 	mux.Handle("/repo/", repoHandler(*flBasicPassword, *flRepo))
+	mux.Handle("/api/v1/munki/", server.Handler(*flRepo))
 
 	srv := &http.Server{
 		Addr:              ":https",
@@ -47,7 +50,7 @@ func serve(cmd *flag.FlagSet) int {
 
 	printMunkiHeadersHelp(*flBasicPassword)
 	if !*flTLS {
-		log.Fatal(http.ListenAndServe(":80", mux))
+		log.Fatal(http.ListenAndServe(":8080", mux))
 		return 0
 	}
 
