@@ -18,8 +18,8 @@ Download the [latest release](https://github.com/micromdm/squirrel/releases/late
 squirrel serve -repo=/path/to/munki_repo -tls-domain=munki.corp.example.com --basic-auth=CHANGEME
 ```
 
-`-repo` flag must be set to the path of a munki repository.
-`-tls-domain` flag must be set to the domain of your munki repo. This value is used by squirrel to obtain new TLS certificates.
+`-repo` flag must be set to the path of a munki repository.  
+`-tls-domain` flag must be set to the domain of your munki repo. This value is used by squirrel to obtain new TLS certificates.  
 `-basic-auth` flag must be set to a password which will be used for authentication to the munki repo.  
 
 Once the server starts, you will see a prompt which prints the correct Authorization header that you need to add to your munki configuration profile.
