@@ -1,0 +1,1 @@
+* Fixed panic when 0 arguments were passed (#06e92dd).
