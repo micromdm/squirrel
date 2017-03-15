@@ -11,6 +11,8 @@ import (
 	"time"
 
 	"golang.org/x/crypto/acme/autocert"
+
+	"github.com/micromdm/squirrel/version"
 )
 
 func Serve() {
@@ -33,6 +35,8 @@ func serve(cmd *flag.FlagSet) int {
 	cmd.Parse(os.Args[2:])
 	mux := http.NewServeMux()
 	mux.Handle("/repo/", repoHandler(*flBasicPassword, *flRepo))
+	mux.Handle("/version", version.Handler())
+	mux.Handle("/healthz", healthz(*flRepo))
 
 	srv := &http.Server{
 		Addr:              ":https",
@@ -124,6 +128,22 @@ func repoHandler(repoPassword string, path string) http.HandlerFunc {
 			return
 		}
 		repo.ServeHTTP(w, r)
+	}
+}
+
+func healthz(path string) http.HandlerFunc {
+	var healthy bool
+	if _, err := os.Stat(path); err == nil {
+		healthy = true
+	} else {
+		log.Printf("healthcheck failed with %s\n", err)
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		if !healthy {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
 	}
 }
 

@@ -1,1 +1,12 @@
+* Added /version URL route (#2).
+    
+    /version returns a JSON object with detailed information of the build environment, 
+    including current commit and go version used to build the app. The binary must be built
+    with the release script in order for the correct values to be set.
+    
+* Added /healthz URL route (#2).
+
+    /healthz returns either a 200 OK status or a 500 error depending on the status of the app. 
+    Currently, a 500 error is returned only if the repo path is not valid.
+
 * Fixed panic when 0 arguments were passed (#06e92dd).
