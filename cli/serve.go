@@ -8,10 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"golang.org/x/crypto/acme/autocert"
 
+	"github.com/kolide/cloudops/env"
+	"github.com/micromdm/squirrel/storage/gcs"
 	"github.com/micromdm/squirrel/version"
 )
 
@@ -25,18 +28,52 @@ const authUsername = "squirrel"
 
 func serve(cmd *flag.FlagSet) int {
 	var (
-		flRepo          = cmd.String("repo", envString("SQUIRREL_MUNKI_REPO_PATH", ""), "path to munki repo")
-		flBasicPassword = cmd.String("basic-auth", envString("SQUIRREL_BASIC_AUTH", ""), "http basic auth password for /repo/")
-		flTLS           = cmd.Bool("tls", envBool("SQUIRREL_USE_TLS", true), "use https")
-		flTLSCert       = cmd.String("tls-cert", envString("SQUIRREL_TLS_CERT", ""), "path to TLS certificate")
-		flTLSKey        = cmd.String("tls-key", envString("SQUIRREL_TLS_KEY", ""), "path to TLS private key")
-		flTLSAuto       = cmd.String("tls-domain", envString("SQUIRREL_AUTO_TLS_DOMAIN", ""), "Automatically fetch certs from Let's Encrypt")
+		flProvider       = cmd.String("provider", env.String("SQUIRREL_MUNKI_REPO_PROVIDER", "filesystem"), "munki repo provider: GCS or filesystem")
+		flGCSCredentials = cmd.String("gcs-credentials", env.String("SQUIRREL_GCS_CREDENTIALS", ""), "path to google cloud storage credentials json")
+		flRepo           = cmd.String("repo", envString("SQUIRREL_MUNKI_REPO_PATH", ""), "path to munki repo")
+		flBasicPassword  = cmd.String("basic-auth", envString("SQUIRREL_BASIC_AUTH", ""), "http basic auth password for /repo/")
+		flTLS            = cmd.Bool("tls", envBool("SQUIRREL_USE_TLS", true), "use https")
+		flTLSCert        = cmd.String("tls-cert", envString("SQUIRREL_TLS_CERT", ""), "path to TLS certificate")
+		flTLSKey         = cmd.String("tls-key", envString("SQUIRREL_TLS_KEY", ""), "path to TLS private key")
+		flTLSAuto        = cmd.String("tls-domain", envString("SQUIRREL_AUTO_TLS_DOMAIN", ""), "Automatically fetch certs from Let's Encrypt")
 	)
 	cmd.Parse(os.Args[2:])
+
+	var repoFileHandler, healthzHandler http.Handler
+	switch strings.ToLower(*flProvider) {
+	case "filesystem":
+		repoFileHandler = http.StripPrefix("/repo/", http.FileServer(http.Dir(*flRepo)))
+		healthzHandler = healthz(*flRepo)
+	case "gcs":
+		if *flGCSCredentials == "" {
+			helpText := `
+To use squirrel with Google Cloud Storage, you must provide a service account file with 
+bucket access. 
+
+First, go to the GCS IAM for project: 
+	https://console.cloud.google.com/iam-admin/serviceaccounts
+
+Create a service accont with access to Google Cloud Storage. 
+The service account must have at least Read Access to the storage bucket. 
+Make sure you download a JSON key for the service account and pass it to 
+squirrel with -gcs-credentials=/path/to/service-account.json 
+`
+			fmt.Println(helpText)
+			os.Exit(1)
+		}
+		gcs, err := gcs.New(*flRepo, *flGCSCredentials)
+		if err != nil {
+			log.Fatal(err)
+		}
+		repoFileHandler = http.StripPrefix("/repo/", http.HandlerFunc(gcs.FileHandler))
+		healthzHandler = gcs.HealthzHandler()
+	default:
+		log.Fatalf("unknown gcs provider %s\n", *flProvider)
+	}
 	mux := http.NewServeMux()
-	mux.Handle("/repo/", repoHandler(*flBasicPassword, *flRepo))
+	mux.Handle("/repo/", authMW(repoFileHandler, *flBasicPassword))
 	mux.Handle("/version", version.Handler())
-	mux.Handle("/healthz", healthz(*flRepo))
+	mux.Handle("/healthz", healthzHandler)
 
 	srv := &http.Server{
 		Addr:              ":https",
@@ -51,7 +88,7 @@ func serve(cmd *flag.FlagSet) int {
 
 	printMunkiHeadersHelp(*flBasicPassword)
 	if !*flTLS {
-		log.Fatal(http.ListenAndServe(":80", mux))
+		log.Fatal(http.ListenAndServe(":8080", mux))
 		return 0
 	}
 
@@ -116,6 +153,18 @@ func redirectTLS() {
 		}),
 	}
 	go func() { log.Fatal(srv.ListenAndServe()) }()
+}
+
+func authMW(next http.Handler, repoPassword string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		_, password, ok := r.BasicAuth()
+		if !ok || password != repoPassword {
+			w.Header().Set("WWW-Authenticate", `Basic realm="munki"`)
+			http.Error(w, "you need to log in", http.StatusUnauthorized)
+			return
+		}
+		next.ServeHTTP(w, r)
+	}
 }
 
 func repoHandler(repoPassword string, path string) http.HandlerFunc {
