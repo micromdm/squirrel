@@ -1,8 +1,8 @@
 To enroll a mac into the `squirrel` server, install an updated version of this profile on the mac.
 
-First, you'll have to make a few changes. Open the profile in your text editor andupdate the values as needed.
+First, you'll have to make a few changes. Open the profile in your text editor and update the values as needed.
 
-You _must_ set the correct value under 
+You _must_ set the correct value under
 ```
 <array>
     <string>Authorization: Basic CHANGEME</string>
@@ -18,5 +18,3 @@ And SoftwareRepoURL:
 ```
 
 Note that `/repo` is a required path for squirrel.
-
-
