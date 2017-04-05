@@ -15,6 +15,7 @@ import (
 
 	"github.com/kolide/cloudops/env"
 	"github.com/micromdm/squirrel/storage/gcs"
+	"github.com/micromdm/squirrel/storage/s3"
 	"github.com/micromdm/squirrel/version"
 )
 
@@ -44,6 +45,13 @@ func serve(cmd *flag.FlagSet) int {
 	case "filesystem":
 		repoFileHandler = http.StripPrefix("/repo/", http.FileServer(http.Dir(*flRepo)))
 		healthzHandler = healthz(*flRepo)
+	case "s3":
+		s3, err := s3.New(*flRepo)
+		if err != nil {
+			log.Fatal(err)
+		}
+		repoFileHandler = http.StripPrefix("/repo/", http.HandlerFunc(s3.FileHandler))
+		healthzHandler = s3.HealthzHandler()
 	case "gcs":
 		if *flGCSCredentials == "" {
 			helpText := `
