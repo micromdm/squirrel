@@ -39,5 +39,63 @@ For help with systemd see the example/systemd folder.
 
 For help enrolling macOS hosts, check out the example/profile folder.
 
----
+# Repo provider
+Squirrel has pluggable storage for munki repo, specified with the `-provider` flag. 
+The default provider is set to `filesystem`, which will expect a local path to munki repo.
+
+Other supported providers are `s3` and `gcs`(google cloud storage).
+
+See the provider specific sections below for how to connect to S3 or GCS.
+
+## S3 provider
+
+First, export the necessary credentials of a IAM user and region as environment variables. (You can also use the ~/.aws/credentials config file as described [here](https://github.com/aws/aws-sdk-go#aws-shared-config-file-awsconfig))
+
+```
+export AWS_ACCESS_KEY_ID=AKID1234567890
+export AWS_SECRET_ACCESS_KEY=MY-SECRET-KEY
+export AWS_REGION=us-east-1
+```
+
+Now serve squirrel. Use the AWS bucket name for the `-repo` flag.
+```
+squirrel serve -repo=awsbucketname -tls-domain=munki.corp.example.com --basic-auth=CHANGEME -provider=s3
+```
+
+To try the config locally on port 8080, you can run
+
+```
+squirrel serve -basic-auth="CHANGEME" -repo=awsbucketname -tls=false -provider=s3
+```
+Which will make your munki repo available at `http://localhost:8080/repo/`.
+Go to `http://localhost:8080/repo/catalogs/all` to get a list of available credentials.
+
+## Google Cloud Storage Provider 
+
+To use squirrel with GCS, you'll need a GCP service account file. 
+```
+squirrel serve \
+    -repo=gcsbucketname \
+    -tls-domain=munki.corp.example.com \
+    -basic-auth=CHANGEME \
+    -provider=gcs \
+    -gcs-credentials /Users/groob/Downloads/groob-gcs-credentials.json 
+```
+
+
+To try the config locally on port 8080, you can run
+
+```
+squirrel serve \
+    -repo=gcsbucketname \
+    -tls=false \
+    -basic-auth=CHANGEME \
+    -provider=gcs \
+    -gcs-credentials /Users/groob/Downloads/groob-gcs-credentials.json 
+```
+
+Which will make your munki repo available at `http://localhost:8080/repo/`.
+Go to `http://localhost:8080/repo/catalogs/all` to get a list of available credentials.
+
+--
 squirrel icon by [Agne Alesiute](https://thenounproject.com/search/?q=squirrel&i=190468) from the [Noun Project](https://thenounproject.com/).
