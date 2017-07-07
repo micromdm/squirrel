@@ -40,6 +40,7 @@ func serve(cmd *flag.FlagSet) int {
 		flTLSKey         = cmd.String("tls-key", envString("SQUIRREL_TLS_KEY", ""), "path to TLS private key")
 		flTLSAuto        = cmd.String("tls-domain", envString("SQUIRREL_AUTO_TLS_DOMAIN", ""), "Automatically fetch certs from Let's Encrypt")
 		flLogFormat      = cmd.String("log-format", envString("SQUIRREL_LOG_FORMAT", "logfmt"), "Enable structured logging. Supported formats: logfmt, json")
+		flSilent         = cmd.Bool("no-help", envBool("SQUIRREL_NO_HELP_TEXT", false), "Silence help text to avoid displaying Auth headers in log.")
 	)
 	cmd.Parse(os.Args[2:])
 
@@ -95,6 +96,7 @@ squirrel with -gcs-credentials=/path/to/service-account.json
 		default:
 			logger = kitlog.NewLogfmtLogger(w)
 		}
+		log.SetOutput(kitlog.NewStdlibAdapter(logger))
 		logger = kitlog.With(logger, "ts", kitlog.DefaultTimestampUTC)
 		logger = kitlog.With(logger, "component", "http")
 		logger = level.Info(logger)
@@ -113,7 +115,9 @@ squirrel with -gcs-credentials=/path/to/service-account.json
 		TLSConfig:         tlsConfig(),
 	}
 
-	printMunkiHeadersHelp(*flBasicPassword)
+	if !*flSilent {
+		printMunkiHeadersHelp(*flBasicPassword)
+	}
 	if !*flTLS {
 		log.Fatal(http.ListenAndServe(":8080", h))
 		return 0

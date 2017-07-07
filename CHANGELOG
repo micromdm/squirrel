@@ -1,3 +1,7 @@
+# 1.0.2
+* Added support for structured logging. Use -log-format=json for JSON output, and -log-format=logfmt (default) for [logfmt](https://brandur.org/logfmt) logging.
+* Added new flag `-no-help` to disable printing the auth header to stdout.
+
 # 1.0.1
 * Added support for pluggable storage - Google Cloud and S3 (#4 and #7)
 * Added /version URL route (#2).
