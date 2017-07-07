@@ -13,6 +13,9 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 
+	kitlog "github.com/go-kit/kit/log"
+	"github.com/go-kit/kit/log/level"
+	"github.com/groob/finalizer/logutil"
 	"github.com/micromdm/squirrel/storage/gcs"
 	"github.com/micromdm/squirrel/storage/s3"
 	"github.com/micromdm/squirrel/version"
@@ -36,6 +39,7 @@ func serve(cmd *flag.FlagSet) int {
 		flTLSCert        = cmd.String("tls-cert", envString("SQUIRREL_TLS_CERT", ""), "path to TLS certificate")
 		flTLSKey         = cmd.String("tls-key", envString("SQUIRREL_TLS_KEY", ""), "path to TLS private key")
 		flTLSAuto        = cmd.String("tls-domain", envString("SQUIRREL_AUTO_TLS_DOMAIN", ""), "Automatically fetch certs from Let's Encrypt")
+		flLogFormat      = cmd.String("log-format", envString("SQUIRREL_LOG_FORMAT", "logfmt"), "Enable structured logging. Supported formats: logfmt, json")
 	)
 	cmd.Parse(os.Args[2:])
 
@@ -82,9 +86,25 @@ squirrel with -gcs-credentials=/path/to/service-account.json
 	mux.Handle("/version", version.Handler())
 	mux.Handle("/healthz", healthzHandler)
 
+	var logger kitlog.Logger
+	{
+		w := kitlog.NewSyncWriter(os.Stderr)
+		switch *flLogFormat {
+		case "json":
+			logger = kitlog.NewJSONLogger(w)
+		default:
+			logger = kitlog.NewLogfmtLogger(w)
+		}
+		logger = kitlog.With(logger, "ts", kitlog.DefaultTimestampUTC)
+		logger = kitlog.With(logger, "component", "http")
+		logger = level.Info(logger)
+
+	}
+	h := logutil.NewHTTPLogger(logger).Middleware(mux)
+
 	srv := &http.Server{
 		Addr:              ":https",
-		Handler:           mux,
+		Handler:           h,
 		ReadTimeout:       60 * time.Second,
 		WriteTimeout:      60 * time.Second,
 		ReadHeaderTimeout: 10 * time.Second,
@@ -95,7 +115,7 @@ squirrel with -gcs-credentials=/path/to/service-account.json
 
 	printMunkiHeadersHelp(*flBasicPassword)
 	if !*flTLS {
-		log.Fatal(http.ListenAndServe(":8080", mux))
+		log.Fatal(http.ListenAndServe(":8080", h))
 		return 0
 	}
 
