@@ -20,6 +20,24 @@
   version = "v1.28.0"
 
 [[projects]]
+  name = "github.com/go-kit/kit"
+  packages = ["endpoint","log","log/level","transport/http"]
+  revision = "a9ca6725cbbea455e61c6bc8a1ed28e81eb3493b"
+  version = "v0.5.0"
+
+[[projects]]
+  name = "github.com/go-logfmt/logfmt"
+  packages = ["."]
+  revision = "390ab7935ee28ec6b286364bba9b4dd6410cb3d5"
+  version = "v0.3.0"
+
+[[projects]]
+  name = "github.com/go-stack/stack"
+  packages = ["."]
+  revision = "7a2f19628aabfe68f0766b59e74d6315f8347d22"
+  version = "v1.5.3"
+
+[[projects]]
   branch = "master"
   name = "github.com/golang/protobuf"
   packages = ["proto","protoc-gen-go/descriptor","ptypes/any"]
@@ -32,10 +50,22 @@
   revision = "84ed26760e7f6f80887a2fbfb50db3cc415d2cea"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/groob/finalizer"
+  packages = [".","logutil"]
+  revision = "4c2ed49aabdaa038f247d72d183e410757cdbe9c"
+
+[[projects]]
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
   revision = "3433f3ea46d9f8019119e7dd41274e112a2359a9"
   version = "0.2.2"
+
+[[projects]]
+  branch = "master"
+  name = "github.com/kr/logfmt"
+  packages = ["."]
+  revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
   name = "github.com/pkg/errors"
@@ -94,6 +124,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e9c4bc5153e31eb3e1ae861a5e1ea4338bf43f68732fd6991fc7b535e3ed4c2b"
+  inputs-digest = "ac0bc93e2014ab7b1c2230e29de766b066c45e7ab7768608504e40a24a9d57e6"
   solver-name = "gps-cdcl"
   solver-version = 1
