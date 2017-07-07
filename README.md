@@ -9,6 +9,7 @@ See the [legacy](https://github.com/micromdm/squirrel/tree/legacy) branch for th
 * [X] **Automatic HTTPS** - squirrel provides a built in Let's Encrypt Client.
 * [X] Basic Authentication - Basic Auth for munki repo
 * [X] Use cloud storage as a repo backend.
+* [X] Structured request logging with JSON or [logfmt](https://brandur.org/logfmt) output.
 
 # Install
 Download the [latest release](https://github.com/micromdm/squirrel/releases/latest) from the release page. 
@@ -24,6 +25,7 @@ squirrel serve -repo=/path/to/munki_repo -tls-domain=munki.corp.example.com --ba
 `-basic-auth` flag must be set to a password which will be used for authentication to the munki repo.  
 
 Once the server starts, you will see a prompt which prints the correct Authorization header that you need to add to your munki configuration profile.
+The help text is convenient, but you might want to disable it if you're capturing logs somewhere. Use `-no-help` flag to disable printing the help text.
 
 Example:
 ```
@@ -98,5 +100,5 @@ squirrel serve \
 Which will make your munki repo available at `http://localhost:8080/repo/`.
 Go to `http://localhost:8080/repo/catalogs/all` to get a list of available credentials.
 
---
+---
 squirrel icon by [Agne Alesiute](https://thenounproject.com/search/?q=squirrel&i=190468) from the [Noun Project](https://thenounproject.com/).
