@@ -13,7 +13,6 @@ import (
 
 	"golang.org/x/crypto/acme/autocert"
 
-	"github.com/kolide/cloudops/env"
 	"github.com/micromdm/squirrel/storage/gcs"
 	"github.com/micromdm/squirrel/storage/s3"
 	"github.com/micromdm/squirrel/version"
@@ -29,8 +28,8 @@ const authUsername = "squirrel"
 
 func serve(cmd *flag.FlagSet) int {
 	var (
-		flProvider       = cmd.String("provider", env.String("SQUIRREL_MUNKI_REPO_PROVIDER", "filesystem"), "munki repo provider: GCS or filesystem")
-		flGCSCredentials = cmd.String("gcs-credentials", env.String("SQUIRREL_GCS_CREDENTIALS", ""), "path to google cloud storage credentials json")
+		flProvider       = cmd.String("provider", envString("SQUIRREL_MUNKI_REPO_PROVIDER", "filesystem"), "munki repo provider: GCS or filesystem")
+		flGCSCredentials = cmd.String("gcs-credentials", envString("SQUIRREL_GCS_CREDENTIALS", ""), "path to google cloud storage credentials json")
 		flRepo           = cmd.String("repo", envString("SQUIRREL_MUNKI_REPO_PATH", ""), "path to munki repo")
 		flBasicPassword  = cmd.String("basic-auth", envString("SQUIRREL_BASIC_AUTH", ""), "http basic auth password for /repo/")
 		flTLS            = cmd.Bool("tls", envBool("SQUIRREL_USE_TLS", true), "use https")

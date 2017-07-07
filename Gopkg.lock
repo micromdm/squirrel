@@ -10,8 +10,8 @@
 [[projects]]
   name = "github.com/aws/aws-sdk-go"
   packages = ["aws","aws/awserr","aws/awsutil","aws/client","aws/client/metadata","aws/corehandlers","aws/credentials","aws/credentials/ec2rolecreds","aws/credentials/endpointcreds","aws/credentials/stscreds","aws/defaults","aws/ec2metadata","aws/endpoints","aws/request","aws/session","aws/signer/v4","internal/shareddefaults","private/protocol","private/protocol/query","private/protocol/query/queryutil","private/protocol/rest","private/protocol/restxml","private/protocol/xml/xmlutil","service/s3","service/sts"]
-  revision = "a5a7f553e106c0b1dcbfbdaeb8774592fcc1a68a"
-  version = "v1.10.6"
+  revision = "b1a7b51924b90a6ecdbaeb17e96418740ff07a1e"
+  version = "v1.10.8"
 
 [[projects]]
   name = "github.com/go-ini/ini"
@@ -38,12 +38,6 @@
   version = "0.2.2"
 
 [[projects]]
-  branch = "master"
-  name = "github.com/kolide/cloudops"
-  packages = ["env"]
-  revision = "e442dcb7346be12e04491f13d918a182d1ff036f"
-
-[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -53,13 +47,13 @@
   branch = "master"
   name = "golang.org/x/crypto"
   packages = ["acme","acme/autocert"]
-  revision = "51714a8c4ac1764f07ab4127d7f739351ced4759"
+  revision = "a48ac81e47fd6f9ed1258f3b60ae9e75f93cb7ed"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/net"
   packages = ["context","context/ctxhttp","http2","http2/hpack","idna","internal/timeseries","lex/httplex","trace"]
-  revision = "570fa1c91359c1869590e9cedf3b53162a51a167"
+  revision = "054b33e6527139ad5b1ec2f6232c3b175bd9a30c"
 
 [[projects]]
   branch = "master"
@@ -71,7 +65,7 @@
   branch = "master"
   name = "golang.org/x/text"
   packages = ["internal/gen","internal/triegen","internal/ucd","secure/bidirule","transform","unicode/bidi","unicode/cldr","unicode/norm","unicode/rangetable"]
-  revision = "2bf8f2a19ec09c670e931282edfe6567f6be21c9"
+  revision = "cfdf022e86b4ecfb646e1efbd7db175dd623a8fa"
 
 [[projects]]
   branch = "master"
@@ -100,6 +94,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "e7d0770cd0df2e74dffc95e0dac963ba81b5b083fadcac1c04d71e8485465f98"
+  inputs-digest = "e9c4bc5153e31eb3e1ae861a5e1ea4338bf43f68732fd6991fc7b535e3ed4c2b"
   solver-name = "gps-cdcl"
   solver-version = 1
