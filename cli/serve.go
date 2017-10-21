@@ -16,9 +16,10 @@ import (
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/groob/finalizer/logutil"
+	"github.com/micromdm/go4/version"
+
 	"github.com/micromdm/squirrel/storage/gcs"
 	"github.com/micromdm/squirrel/storage/s3"
-	"github.com/micromdm/squirrel/version"
 )
 
 func Serve() {

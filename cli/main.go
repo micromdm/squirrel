@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/micromdm/squirrel/version"
+	"github.com/micromdm/go4/version"
 )
 
 func Main() {

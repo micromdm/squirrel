@@ -68,6 +68,12 @@
   revision = "b84e30acd515aadc4b783ad4ff83aff3299bdfe0"
 
 [[projects]]
+  branch = "master"
+  name = "github.com/micromdm/go4"
+  packages = ["version"]
+  revision = "486ea5f130c78a9c058374eb159df08296caea9d"
+
+[[projects]]
   name = "github.com/pkg/errors"
   packages = ["."]
   revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
@@ -124,6 +130,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ac0bc93e2014ab7b1c2230e29de766b066c45e7ab7768608504e40a24a9d57e6"
+  inputs-digest = "7ffc24c0f7ff27e0d33a787973582a3e9375e2761932a38d9b75323df9b11c30"
   solver-name = "gps-cdcl"
   solver-version = 1
