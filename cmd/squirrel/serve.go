@@ -1,7 +1,6 @@
-package cli
+package main
 
 import (
-	"crypto/tls"
 	"encoding/base64"
 	"flag"
 	"fmt"
@@ -9,41 +8,41 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"time"
-
-	"golang.org/x/crypto/acme/autocert"
 
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
 	"github.com/groob/finalizer/logutil"
+	"github.com/micromdm/go4/env"
+	"github.com/micromdm/go4/httputil"
 	"github.com/micromdm/go4/version"
+	"github.com/pkg/errors"
 
 	"github.com/micromdm/squirrel/storage/gcs"
 	"github.com/micromdm/squirrel/storage/s3"
 )
 
-func Serve() {
-	serveCMD := flag.NewFlagSet("ca", flag.ExitOnError)
-	status := serve(serveCMD)
-	os.Exit(status)
-}
-
-const authUsername = "squirrel"
-
-func serve(cmd *flag.FlagSet) int {
+func runServe(args []string) error {
+	flagset := flag.NewFlagSet("squirrel", flag.ExitOnError)
 	var (
-		flProvider       = cmd.String("provider", envString("SQUIRREL_MUNKI_REPO_PROVIDER", "filesystem"), "munki repo provider: GCS or filesystem")
-		flGCSCredentials = cmd.String("gcs-credentials", envString("SQUIRREL_GCS_CREDENTIALS", ""), "path to google cloud storage credentials json")
-		flRepo           = cmd.String("repo", envString("SQUIRREL_MUNKI_REPO_PATH", ""), "path to munki repo")
-		flBasicPassword  = cmd.String("basic-auth", envString("SQUIRREL_BASIC_AUTH", ""), "http basic auth password for /repo/")
-		flTLS            = cmd.Bool("tls", envBool("SQUIRREL_USE_TLS", true), "use https")
-		flTLSCert        = cmd.String("tls-cert", envString("SQUIRREL_TLS_CERT", ""), "path to TLS certificate")
-		flTLSKey         = cmd.String("tls-key", envString("SQUIRREL_TLS_KEY", ""), "path to TLS private key")
-		flTLSAuto        = cmd.String("tls-domain", envString("SQUIRREL_AUTO_TLS_DOMAIN", ""), "Automatically fetch certs from Let's Encrypt")
-		flLogFormat      = cmd.String("log-format", envString("SQUIRREL_LOG_FORMAT", "logfmt"), "Enable structured logging. Supported formats: logfmt, json")
-		flSilent         = cmd.Bool("no-help", envBool("SQUIRREL_NO_HELP_TEXT", false), "Silence help text to avoid displaying Auth headers in log.")
+		flConfigPath     = flagset.String("config-path", env.String("SQUIRREL_AUTOCERT_CACHE_PATH", "/var/micromdm/squirrel"), "path to autocert cache directory")
+		flProvider       = flagset.String("provider", env.String("SQUIRREL_MUNKI_REPO_PROVIDER", "filesystem"), "munki repo provider: GCS or filesystem")
+		flGCSCredentials = flagset.String("gcs-credentials", env.String("SQUIRREL_GCS_CREDENTIALS", ""), "path to google cloud storage credentials json")
+		flRepo           = flagset.String("repo", env.String("SQUIRREL_MUNKI_REPO_PATH", ""), "path to munki repo")
+		flBasicPassword  = flagset.String("basic-auth", env.String("SQUIRREL_BASIC_AUTH", ""), "http basic auth password for /repo/")
+		flTLS            = flagset.Bool("tls", env.Bool("SQUIRREL_USE_TLS", true), "use https")
+		flTLSCert        = flagset.String("tls-cert", env.String("SQUIRREL_TLS_CERT", ""), "path to TLS certificate")
+		flTLSKey         = flagset.String("tls-key", env.String("SQUIRREL_TLS_KEY", ""), "path to TLS private key")
+		flTLSDomain      = flagset.String("tls-domain", env.String("SQUIRREL_AUTO_TLS_DOMAIN", ""), "Automatically fetch certs from Let's Encrypt")
+		flLogFormat      = flagset.String("log-format", env.String("SQUIRREL_LOG_FORMAT", "logfmt"), "Enable structured logging. Supported formats: logfmt, json")
+		flSilent         = flagset.Bool("no-help", env.Bool("SQUIRREL_NO_HELP_TEXT", false), "Silence help text to avoid displaying Auth headers in log.")
+		flHTTPDebug      = flagset.Bool("http-debug", false, "enable debug for http(dumps full request)")
+		flHTTPAddr       = flagset.String("http-addr", ":https", "http(s) listen address of http server. defaults to :8080 if tls is false")
 	)
-	cmd.Parse(os.Args[2:])
+
+	flagset.Usage = usageFor(flagset, "squirrel serve [flags]")
+	if err := flagset.Parse(args); err != nil {
+		return err
+	}
 
 	var repoFileHandler, healthzHandler http.Handler
 	switch strings.ToLower(*flProvider) {
@@ -83,6 +82,11 @@ squirrel with -gcs-credentials=/path/to/service-account.json
 	default:
 		log.Fatalf("unknown gcs provider %s\n", *flProvider)
 	}
+
+	if !*flSilent {
+		printMunkiHeadersHelp(*flBasicPassword)
+	}
+
 	mux := http.NewServeMux()
 	mux.Handle("/repo/", authMW(repoFileHandler, *flBasicPassword))
 	mux.Handle("/version", version.Handler())
@@ -99,43 +103,31 @@ squirrel with -gcs-credentials=/path/to/service-account.json
 		}
 		log.SetOutput(kitlog.NewStdlibAdapter(logger))
 		logger = kitlog.With(logger, "ts", kitlog.DefaultTimestampUTC)
-		logger = kitlog.With(logger, "component", "http")
+		logger := kitlog.With(logger, "transport", "http")
 		logger = level.Info(logger)
-
-	}
-	h := logutil.NewHTTPLogger(logger).Middleware(mux)
-
-	srv := &http.Server{
-		Addr:              ":https",
-		Handler:           h,
-		ReadTimeout:       60 * time.Second,
-		WriteTimeout:      60 * time.Second,
-		ReadHeaderTimeout: 10 * time.Second,
-		IdleTimeout:       10 * time.Minute,
-		MaxHeaderBytes:    1 << 18, // 0.25 MB
-		TLSConfig:         tlsConfig(),
 	}
 
-	if !*flSilent {
-		printMunkiHeadersHelp(*flBasicPassword)
+	var handler http.Handler
+	if *flHTTPDebug {
+		handler = httputil.HTTPDebugMiddleware(os.Stdout, true, logger.Log)(mux)
+	} else {
+		handler = mux
 	}
-	if !*flTLS {
-		log.Fatal(http.ListenAndServe(":8080", h))
-		return 0
-	}
+	handler = logutil.NewHTTPLogger(logger).Middleware(handler)
 
-	if *flTLSAuto != "" {
-		serveACME(srv, *flTLSAuto)
-		return 0
-	}
+	serveOpts := httputil.Simple(
+		*flConfigPath,
+		handler,
+		*flHTTPAddr,
+		*flTLSCert,
+		*flTLSKey,
+		*flTLS,
+		logger,
+		*flTLSDomain,
+	)
 
-	tlsFromFile := *flTLSAuto == "" || (*flTLSCert != "" && *flTLSKey != "")
-	if tlsFromFile {
-		serveTLS(srv, *flTLSCert, *flTLSKey)
-		return 0
-	}
-
-	return 0
+	err := httputil.ListenAndServe(serveOpts...)
+	return errors.Wrap(err, "calling ListenAndServe")
 }
 
 func printMunkiHeadersHelp(password string) {
@@ -155,36 +147,6 @@ func printMunkiHeadersHelp(password string) {
 	auth := basicAuth(password)
 	header := fmt.Sprintf("Authorization: Basic %s", auth)
 	fmt.Println(fmt.Sprintf(help, header, header))
-}
-
-func serveTLS(server *http.Server, certPath, keyPath string) {
-	redirectTLS()
-	log.Fatal(server.ListenAndServeTLS(certPath, keyPath))
-}
-
-func serveACME(server *http.Server, domain string) {
-	m := autocert.Manager{
-		Prompt:     autocert.AcceptTOS,
-		HostPolicy: autocert.HostWhitelist(domain),
-		Cache:      autocert.DirCache("./certificates"),
-	}
-	server.TLSConfig.GetCertificate = m.GetCertificate
-	redirectTLS()
-	log.Fatal(server.ListenAndServeTLS("", ""))
-}
-
-// redirects port 80 to port 443
-func redirectTLS() {
-	srv := &http.Server{
-		ReadTimeout:  5 * time.Second,
-		WriteTimeout: 5 * time.Second,
-		Handler: http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			w.Header().Set("Connection", "close")
-			url := "https://" + req.Host + req.URL.String()
-			http.Redirect(w, req, url, http.StatusMovedPermanently)
-		}),
-	}
-	go func() { log.Fatal(srv.ListenAndServe()) }()
 }
 
 func authMW(next http.Handler, repoPassword string) http.HandlerFunc {
@@ -228,39 +190,7 @@ func healthz(path string) http.HandlerFunc {
 	}
 }
 
-func tlsConfig() *tls.Config {
-	cfg := &tls.Config{
-		PreferServerCipherSuites: true,
-		CurvePreferences: []tls.CurveID{
-			tls.CurveP256,
-			tls.X25519,
-		},
-		MinVersion: tls.VersionTLS12,
-		CipherSuites: []uint16{
-			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
-			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
-			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
-			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
-		},
-	}
-	return cfg
-}
-
-func envString(key, def string) string {
-	if env := os.Getenv(key); env != "" {
-		return env
-	}
-	return def
-}
-
-func envBool(key string, def bool) bool {
-	if env := os.Getenv(key); env == "true" {
-		return true
-	}
-	return def
-}
+const authUsername = "squirrel"
 
 func basicAuth(password string) string {
 	auth := authUsername + ":" + password
