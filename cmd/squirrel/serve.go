@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"crypto/subtle"
 
 	kitlog "github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
@@ -152,7 +153,7 @@ func printMunkiHeadersHelp(password string) {
 func authMW(next http.Handler, repoPassword string) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		_, password, ok := r.BasicAuth()
-		if !ok || password != repoPassword {
+		if !ok || subtle.ConstantTimeCompare([]byte(password), []byte(repoPassword)) != 1 {
 			w.Header().Set("WWW-Authenticate", `Basic realm="munki"`)
 			http.Error(w, "you need to log in", http.StatusUnauthorized)
 			return
