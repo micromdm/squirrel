@@ -2,9 +2,13 @@ all: build
 
 .PHONY: build
 
-ifndef ($(GOPATH))
-	GOPATH = $(HOME)/go
+ifeq ($(GOPATH),)
+	PATH := $(HOME)/go/bin:$(PATH)
+else
+	PATH := $(GOPATH)/bin:$(PATH)
 endif
+
+export GO111MODULE=on
 
 PATH := $(GOPATH)/bin:$(PATH)
 VERSION = $(shell git describe --tags --always --dirty)
@@ -27,34 +31,22 @@ else
 endif
 
 BUILD_VERSION = "\
-	-X github.com/micromdm/squirrel/vendor/github.com/micromdm/go4/version.appName=${APP_NAME} \
-	-X github.com/micromdm/squirrel/vendor/github.com/micromdm/go4/version.version=${VERSION} \
-	-X github.com/micromdm/squirrel/vendor/github.com/micromdm/go4/version.branch=${BRANCH} \
-	-X github.com/micromdm/squirrel/vendor/github.com/micromdm/go4/version.buildUser=${USER} \
-	-X github.com/micromdm/squirrel/vendor/github.com/micromdm/go4/version.buildDate=${NOW} \
-	-X github.com/micromdm/squirrel/vendor/github.com/micromdm/go4/version.revision=${REVISION} \
-	-X github.com/micromdm/squirrel/vendor/github.com/micromdm/go4/version.goVersion=${GOVERSION}"
+	-X github.com/micromdm/go4/version.appName=${APP_NAME} \
+	-X github.com/micromdm/go4/version.version=${VERSION} \
+	-X github.com/micromdm/go4/version.branch=${BRANCH} \
+	-X github.com/micromdm/go4/version.buildUser=${USER} \
+	-X github.com/micromdm/go4/version.buildDate=${NOW} \
+	-X github.com/micromdm/go4/version.revision=${REVISION} \
+	-X github.com/micromdm/go4/version.goVersion=${GOVERSION}"
 
-WORKSPACE = ${GOPATH}/src/github.com/micromdm/squirrel
-check-deps:
-ifneq ($(shell test -e ${WORKSPACE}/Gopkg.lock && echo -n yes), yes)
-	@echo "folder is clonded in the wrong place, copying to a Go Workspace"
-	@echo "See: https://golang.org/doc/code.html#Workspaces"
-	@git clone git@github.com:micromdm/squirrel ${WORKSPACE}
-	@echo "cd to ${WORKSPACE} and run make deps again."
-	@exit 1
-endif
-ifneq ($(shell pwd), $(WORKSPACE))
-	@echo "cd to ${WORKSPACE} and run make deps again."
-	@exit 1
-endif
+gomodcheck: 
+	@go help mod > /dev/null || (@echo micromdm requires Go version 1.11 or higher && exit 1)
 
-deps: check-deps
-	go get -u github.com/golang/dep/...
-	dep ensure -vendor-only
+deps: gomodcheck
+	@go mod download
 
 test:
-	go test -cover -race -v $(shell go list ./... | grep -v /vendor/)
+	go test -cover -race ./...
 
 build: squirrel
 
@@ -66,10 +58,8 @@ clean:
 	mkdir -p build/darwin
 	mkdir -p build/linux
 
-INSTALL_STEPS := \
+install-local: \
 	install-squirrel 
-
-install-local: $(INSTALL_STEPS)
 
 .pre-squirrel:
 	$(eval APP_NAME = squirrel)
