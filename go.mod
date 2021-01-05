@@ -11,7 +11,7 @@ require (
 	github.com/go-stack/stack v1.6.0 // indirect
 	github.com/groob/finalizer v0.0.0-20170707115354-4c2ed49aabda
 	github.com/kr/logfmt v0.0.0-20140226030751-b84e30acd515 // indirect
-	github.com/micromdm/go4 v0.0.0-20171021052028-032f15f8a872
+	github.com/micromdm/go4 v0.0.0-20210104222236-8a0936d9e451
 	github.com/pkg/errors v0.9.1
 	github.com/stretchr/testify v1.5.1 // indirect
 	google.golang.org/api v0.20.0
