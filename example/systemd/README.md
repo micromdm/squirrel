@@ -1,8 +1,8 @@
-The `squirrel.unit` file is an example systemd unit file for keeping the squirrel service running.
+The `squirrel.service` file is an example systemd unit file for keeping the squirrel service running.
 
 
 - change the configuration flags under `[Service]`.  
-- `sudo cp squirrel.unit /etc/systemd/system/`
+- `sudo cp squirrel.service /etc/systemd/system/`
 - `sudo systemctl start squirrel.service`
 
 # Useful commands
@@ -20,6 +20,9 @@ sudo systemctl stop squirrel.service
 sudo systemctl restart squirrel.service
 sudo systemctl status squirrel.service
 ```
+# Useful variables
+Environment="HTTP_PROXY=http://proxy.company.com:port/"
+Environment="HTTPS_PROXY=http://proxy.company.com:port/"
 
 Tail logs:
 ```
